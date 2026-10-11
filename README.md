@@ -3,14 +3,26 @@
 
 Offline Android videoke with a second phone as the remote. Navy, turquoise and gold interface.
 
-**KantaGo 0.5.0** is an **in-place update of the already installed KantaGo Preview 0.2.2**, keeping its app data and song library. The **app icon label is now just KantaGo**. For compatibility its internal Android application ID remains `com.kantago.app.preview` and the existing signing certificate is unchanged. Do not change this application ID or signing key.
+**KantaGo 0.5.1 – safe recovery installation.** This version has the normal visible app name **KantaGo**, but an intentionally new Android package ID `com.kantago.player`. Android installs it **beside** earlier KantaGo installations. This is necessary because older builds were signed with different keys and cannot update each other.
 
-The separate original KantaGo 0.1.0 installation (`com.kantago.app`) cannot be upgraded by this APK because its debug signing key differed. Keep it installed to preserve its private songs. If both icons appear on the home screen, use the phone's **Remove shortcut** option on the original icon (never Uninstall); this only removes a home-screen shortcut, not the installed original app. Both installed apps may still appear in the app drawer, with the same display name. These two applications do not share their private data.
+**Do not uninstall older KantaGo** unless you have independently backed up imported songs and want to remove its old app icon. Earlier song data stays safely inside its original installation; it **cannot automatically transfer** to the newly installed KantaGo. You can import original copies of MIDI/KAR/ZIP/7z files again, or use Settings → Export ZIP in older versions that have that feature.
+
+The newer installation is designed to update in place from version 0.5.1 onward **only while its pinned signing key remains available**. The current GitHub Actions cache is not permanent signing-key storage; configure encrypted long-term signing storage before distributing widely.
+
+## APK signing compatibility incident (October 11, 2026)
+
+**Important for existing installs:** Android requires exactly the same application ID and APK signing certificate to update an installed app without uninstalling it. Early KantaGo debug APKs **were incorrectly signed using Android Gradle Plugin's default signing key at `/home/runner/.config/.android/debug.keystore`**, while the workflow checked a DIFFERENT key at `/home/runner/.android/debug.keystore`. Because the actual signing key changed per CI runner, GitHub Releases from builds 6, 7, 8, 17 and 19 were signed with different certificates. The keystore fingerprint checks in those workflows were therefore insufficient.
+
+The corrective change explicitly binds Gradle's debug signing configuration to the keystore whose fingerprint is pinned in `signing/preview-cert.sha256`, and verifies the **actual signed APK** using Android `apksigner verify --print-certs`. A different certificate causes CI to fail before publication.
+
+**This repair is for future builds only.** It cannot make a new APK update an old install signed with a transient, discarded private key. Users must **not uninstall** an app containing valuable imported songs before backing up the song library. On existing versions that offer it, use Settings → Save backup ZIP first. For earlier versions, recover existing files through their original sources, or use advanced ADB backup methods where available, before any reinstall. A separate future app ID can install side-by-side but will not automatically inherit private app data.
+
+The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
 
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.5.0.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. Install over the already installed **KantaGo 0.2.3** (or the earlier 0.2.2 Preview) and keep its imported songs and settings. **Do not uninstall your original KantaGo 0.1.0 installation.**
+Open the newest release and tap **KantaGo-0.5.1.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
 
 ## First test
 1. Install the APK on your main Android device.

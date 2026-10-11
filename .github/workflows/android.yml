@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      # Keep the new Preview package signed with the same test certificate.
+      # Pin the signing key for future KantaGo com.kantago.player versions.
       # A GitHub Actions cache can expire. Never rely on it for production signing.
       - name: Restore KantaGo signing certificate
         id: preview-key
@@ -58,19 +58,61 @@ jobs:
           java -cp /tmp/kantago-test com.kantago.app.PackInteropTest KantaGo-Starter-Collection.kgpack
       - name: Build installable test APK
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
+      - name: Verify signed APK certificate and compare historical builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          cert_of() {
+            "$APKSIGNER" verify --print-certs "$1" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]'
+          }
+          EXPECTED="$(tr -d ':[:space:]' < signing/preview-cert.sha256 | tr '[:lower:]' '[:upper:]')"
+          CURRENT="$(cert_of app/build/outputs/apk/debug/app-debug.apk)"
+          echo "Current APK actual certificate SHA256: $CURRENT"
+          echo "Pinned expected SHA256: $EXPECTED"
+          PKG=$("$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p")
+          echo "APK application ID: $PKG"
+          if [[ "$PKG" != "com.kantago.player" ]]; then
+            echo "::error::Expected side-by-side KantaGo package, found $PKG"; exit 1
+          fi
+          if [[ -z "$CURRENT" || "$CURRENT" != "$EXPECTED" ]]; then
+            echo "::warning::APK signer differs from pinned debug keystore; checking old releases to determine the original installed signer."
+          fi
+          echo "Android Gradle signing configuration:"
+          gradle :app:signingReport --no-daemon | grep -E 'Variant:|Config:|Store:|Alias:|SHA-256:' || true
+          mkdir -p "$RUNNER_TEMP/kantago-history"
+          for version in "test-6:KantaGo-0.2.2-test.apk" "test-7:KantaGo-0.2.2-test.apk" "test-8:KantaGo-0.2.3.apk" "test-17:KantaGo-0.4.0.apk" "test-19:KantaGo-0.5.1.apk"; do
+            tag="${version%%:*}"
+            file="${version#*:}"
+            if gh release download "$tag" --pattern "$file" --dir "$RUNNER_TEMP/kantago-history" --clobber; then
+              SIGNER="$(cert_of "$RUNNER_TEMP/kantago-history/$file")"
+              echo "APK signature for $tag: $SIGNER"
+              if [[ "$SIGNER" != "$EXPECTED" ]]; then
+                echo "::warning::$tag was signed with a different key from the current release"
+              fi
+              rm -f "$RUNNER_TEMP/kantago-history/$file"
+            else
+              echo "::warning::Historical release $tag unavailable for signature comparison"
+            fi
+          done
+          if [[ -z "$CURRENT" || "$CURRENT" != "$EXPECTED" ]]; then
+            echo "::error::APK signing certificate mismatch found; build stopped. Update signing configuration before publishing."
+            exit 1
+          fi
       - name: Show KantaGo certificate identity
         run: |
           keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android             -alias androiddebugkey | grep -E "SHA256:" | head -1
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging             app/build/outputs/apk/debug/app-debug.apk | grep '^package:'
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.5.0-debug
+          name: KantaGo-0.5.1-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish APK and original starter song bundle
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.5.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.5.1.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.5.0.apk KantaGo-Starter-Collection.kgpack --title "KantaGo 0.5.0 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "KantaGo 0.5.0 includes an optional encrypted Starter Song Collection with 8 original karaoke practice tracks. Download KantaGo-Starter-Collection.kgpack and enter the starter activation key: KANTA-START-2026. No copyrighted or pirated commercial songs are included. Android package signing and user song data remain unchanged."
+          gh release create "$TAG" KantaGo-0.5.1.apk KantaGo-Starter-Collection.kgpack --title "KantaGo 0.5.1 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "SAFE SIDE-BY-SIDE BUILD. KantaGo 0.5.1 uses a new Android package ID com.kantago.player, installing alongside previous KantaGo versions without removing them or their songs. Existing app-private songs do not automatically transfer. This APK now signs with a pinned key, verified on the finished APK. The cache-backed key must eventually be stored securely for long-term updates. Includes optional original 8-song starter .kgpack. Starter activation key: KANTA-START-2026. No third-party commercial songs bundled."
