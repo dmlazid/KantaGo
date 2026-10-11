@@ -1,0 +1,36 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md', 'docs/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Core checks
+        run: bash tests/run.sh
+      - name: Build installable test APK
+        run: gradle :app:assembleDebug :app:lintDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KantaGo-0.1.0-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish test build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.1.0-test.apk
+          TAG="test-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" KantaGo-0.1.0-test.apk --title "KantaGo 0.1.0 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "First test version. Offline MIDI/KAR with built-in synth and lyrics, MP3/MP4/LRC imports, paired Wi-Fi remote, queue, language/year tags and backgrounds. Includes an original demo only; no commercial song pack. Test signing can change across builds; export/retain your original media files before replacing a test install."
