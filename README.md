@@ -30,7 +30,6 @@ No internet is needed after you import the songs. Only metadata and control comm
 - **ZIP and 7z song-pack import** supports compatible media and timed lyric files with limits, duplicate handling, and safe path checks. Neither format grants redistribution rights to third-party songs.
 - **Installed song library remains entirely offline.** External download-source tiles were removed from settings; no unauthorized third-party collections are included.
 
-- **Discover songs directory** with handpicked links for Karaoke Den, the 6,000+ MIDI pack index, MidKar, MIDI-Song, FreeMIDIs, a Scribd songbook, and Song Service. Opens in the device browser; no automated scraping or redistribution. Files downloaded separately can be imported if usage is permitted. `.7z` packs can be imported directly.
 - **In-app QR scanning** on the second Android phone using its rear camera. No separate browser needed; KantaGo checks QR links point to a private Wi-Fi/hotspot IP.
 - **One-tap backup ZIP** for imported song files and matching lyrics, with a JSON catalog included for records. Import ZIP restores playable media; individual song language/year tags may need to be set again.
 - **Saved reservation queue** survives closing and reopening the app; songs do not auto-play on restart.
