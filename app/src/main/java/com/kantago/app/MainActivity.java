@@ -35,6 +35,21 @@ public class MainActivity extends Activity implements LocalServer.Api {
   @JavascriptInterface public void connect(String address){ui.post(()->connectRemote(address));}
   @JavascriptInterface public void scanPair(){ui.post(()->openQrScanner());}
   @JavascriptInterface public String previousRemote(){return getPreferences(0).getString("lastRemoteAddress","");}
+  @JavascriptInterface public void openSongSource(String name){ui.post(()->{
+   if(remote)return;
+   Map<String,String> sites=new HashMap<>();
+   sites.put("den","https://karaokeden.com/eng");
+   sites.put("packs","https://ideas-knowledge-wisdom.blogspot.com/2014/04/6000-midi-karaoke-file-free-download.html?m=1");
+   sites.put("midkar","https://midkar.com/Pop_Rock/Pop_Rock_A_to_Z.html");
+   sites.put("midisong","https://www.midi-song.com/index.php?action_main=Alphabet-Songs&param=I&start=101");
+   sites.put("freemidis","https://freemidis.net/");
+   sites.put("songbook","https://www.scribd.com/document/583899352/Karaoke-Song-Book-PDFDrive");
+   sites.put("service","https://old.song-service.com/");
+   String url=sites.get(name);
+   if(url==null)return;
+   try{Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(url));startActivity(open);}
+   catch(Exception e){toast("No browser is available to open this song website.");}
+  });}
   @JavascriptInterface public void exportSongs(){ui.post(()->{
    if(remote)return;
    Intent pick=new Intent(Intent.ACTION_CREATE_DOCUMENT);

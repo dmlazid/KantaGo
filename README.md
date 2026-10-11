@@ -23,6 +23,7 @@ Open the newest release and tap **KantaGo-0.3.0.apk** under Assets. Android 8 or
 No internet is needed after you import the songs. Only metadata and control commands are needed for the remote; audio plays from the main device. No account, activation, ads, analytics, or cloud storage.
 
 ## Included in 0.3.0
+- **Discover songs directory** with handpicked links for Karaoke Den, the 6,000+ MIDI pack index, MidKar, MIDI-Song, FreeMIDIs, a Scribd songbook, and Song Service. Opens in the device browser; no automated scraping or redistribution. Files downloaded separately can be imported if usage is permitted. `.7z` packs must be extracted first.
 - **In-app QR scanning** on the second Android phone using its rear camera. No separate browser needed; KantaGo checks QR links point to a private Wi-Fi/hotspot IP.
 - **One-tap backup ZIP** for imported song files and matching lyrics, with a JSON catalog included for records. Import ZIP restores playable media; individual song language/year tags may need to be set again.
 - **Saved reservation queue** survives closing and reopening the app; songs do not auto-play on restart.

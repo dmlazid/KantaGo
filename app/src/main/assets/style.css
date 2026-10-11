@@ -61,3 +61,9 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 #remoteDisconnect{background:#502d3d;border-color:#76465a}
 #exportSongs{border-color:#3b9a91;background:linear-gradient(130deg,#214a52,#193143)}
 #connectDialog p.muted{margin:0 0 10px;font-size:12px}
+
+/* 0.3.0 song source directory */
+.sourceTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 15px}
+.sourceTiles button{min-width:0;min-height:70px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:6px;padding:13px 12px;background:#152c39;border:1px solid #306068;border-radius:13px}
+.sourceTiles b{font-size:13px;color:#a7f6ee}.sourceTiles small{font-size:11px;color:#b1c9d1;line-height:1.4}
+@media(max-width:350px){.sourceTiles{grid-template-columns:1fr}}

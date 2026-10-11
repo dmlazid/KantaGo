@@ -22,6 +22,10 @@ function importDialog(){if(host)$('importDialog').showModal();else notify('Impor
 function pick(folder){let year=$('importYear').value;if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}Native.importFiles($('importLang').value,year,folder);$('importDialog').close();}
 $('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);
 $('exportSongs').onclick=()=>{if(host)Native.exportSongs();else notify('Back up songs on the main KantaGo phone.');};
+document.querySelectorAll('[data-song-source]').forEach(b=>b.onclick=()=>{
+ if(host)Native.openSongSource(b.dataset.songSource);
+ else notify('Browse song sites on the main KantaGo phone.');
+});
 $('pickZip').onclick=()=>{
  const year=$('importYear').value;
  if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}
