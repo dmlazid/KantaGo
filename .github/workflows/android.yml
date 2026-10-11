@@ -101,18 +101,16 @@ jobs:
             echo "::error::APK signing certificate mismatch found; build stopped. Update signing configuration before publishing."
             exit 1
           fi
-      - name: Verify original karaoke videos are inside the APK
-        run: |
-          set -euo pipefail
-          FILE="app/build/outputs/apk/debug/app-debug.apk"
-          unzip -Z1 "$FILE" | grep -q '^assets/scenes/disco.mp4
+      - name: Verify scenes and 48 karaoke tracks inside APK
         run: |
           set -euo pipefail
           FILE="app/build/outputs/apk/debug/app-debug.apk"
           ASSETS="$(unzip -Z1 "$FILE")"
-          grep -q '^assets/builtin/catalog.json$' <<< "$ASSETS"
-          COUNT="$(grep -Ec '^assets/builtin/kb-[0-9]{6}\.kar$' <<< "$ASSETS")"
-          echo "APK includes $COUNT playable karaoke MIDI/KAR files"
+          grep -Fqx 'assets/scenes/disco.mp4' <<< "$ASSETS"
+          grep -Fqx 'assets/scenes/sunset.mp4' <<< "$ASSETS"
+          grep -Fqx 'assets/builtin/catalog.json' <<< "$ASSETS"
+          COUNT="$(grep -Ec '^assets/builtin/kb-[0-9]{6}\.kar' <<< "$ASSETS")"
+          echo "Found $COUNT built-in karaoke MIDI tracks and two looping MP4 scenes"
           test "$COUNT" -eq 48
       - name: Show KantaGo certificate identity
         run: |
