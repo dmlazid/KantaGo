@@ -12,7 +12,13 @@ $('pairSubmit').onclick=async()=>{try{const r=await fetch('/api/pair',{method:'P
 $('pairDialog').addEventListener('cancel',e=>e.preventDefault());
 function importDialog(){if(host)$('importDialog').showModal();else notify('Import songs on the main videoke device.');}['importHome','importSongs','importSettings'].forEach(id=>$(id).onclick=importDialog);
 function pick(folder){let year=$('importYear').value;if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}Native.importFiles($('importLang').value,year,folder);$('importDialog').close();}
-$('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);$('background').onclick=()=>host&&Native.background();
+$('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);
+$('pickZip').onclick=()=>{
+ const year=$('importYear').value;
+ if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}
+ if(!host){notify('Import ZIP on the main videoke phone.');return;}
+ Native.importZip($('importLang').value,year);$('importDialog').close();
+};$('background').onclick=()=>host&&Native.background();
 $('lyricSize').value=localStorage.getItem('lyricSize')||34;function size(){document.documentElement.style.setProperty('--lyric',$('lyricSize').value+'px');localStorage.setItem('lyricSize',$('lyricSize').value);}size();$('lyricSize').oninput=size;
 $('sortSongs').value=localStorage.getItem('kantago-sort')||'number';
 $('sortSongs').onchange=()=>{localStorage.setItem('kantago-sort',$('sortSongs').value);limit=60;renderSongs();};
