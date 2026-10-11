@@ -19,7 +19,7 @@ public final class KaraokeCaptionsTest {
   ok(first[0].sung.contains("Verse 1")&&first[0].sung.contains("now"),"first words sung");
   ok(first[1].text.equals("Verse 2 now"),"next line shown");
   ok(first[3].text.equals("Verse 4 now"),"fourth line shown");
-  KaraokeCaptions.Line[] second=KaraokeCaptions.midi(events,2200);
+  KaraokeCaptions.Line[] second=KaraokeCaptions.midi(events,1700);
   ok(second[1].active,"second line becomes active");
   ok(second[1].sung.contains("Verse 2")&&!second[1].sung.contains("now"),"current line highlights only completed fragments");
   ok(second[1].pending.contains("now"),"future word remains white");
