@@ -7,3 +7,51 @@
 .lyricTiming{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.lyricTiming button{min-width:72px;flex:1;padding:8px}.lyricTiming b{min-width:58px;text-align:center}
 #lyricBefore.lineFill{background:linear-gradient(to right,var(--gold) 0,var(--gold) var(--filled),#fff var(--filled),#fff 100%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 @media(max-width:420px){.seekRow{flex-direction:column;align-items:stretch}.seekRow small{max-width:none}.libraryTools{gap:7px}.libraryTools select{padding:10px 8px}.song{gap:5px}.song button{min-width:32px;padding:6px}}
+
+/* 0.2.1: paired-phone remote inspired by conventional videoke handsets */
+body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],body:not(.remote) nav [data-page="remoteLyrics"],body:not(.remote) nav [data-page="remoteSettings"]{display:none!important}
+.remote #player,.remote #home,.remote #settings,.remote header #pairTop,.remote nav [data-page="home"],.remote nav [data-page="player"],.remote nav [data-page="settings"]{display:none!important}
+.remote main{max-width:650px;padding:12px 12px 110px}
+.remote nav{padding-top:12px;gap:2px;justify-content:space-between}
+.remote nav button{font-size:22px;min-width:0;min-height:55px;padding:5px 2px;color:#adc3dd}
+.remote nav button.active{background:#254054;color:var(--teal);border-radius:15px}
+.remote nav small{font-size:10px}
+.remote header{padding:11px 14px}.remote .brand{font-size:22px}
+.remoteConnect{display:flex;align-items:center;gap:10px;background:#172439;border:1px solid #304359;border-radius:16px;padding:10px 11px;margin-bottom:12px}
+.remoteTarget{display:flex;align-items:center;min-width:0;gap:10px;flex:1}.remoteTarget>div{display:flex;flex-direction:column;gap:4px;min-width:0}.remoteTarget b{font-size:13px}.remoteTarget small{font-size:12px;color:#9eb8c9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.remoteDot{background:#22c5aa;border-radius:50%;width:9px;height:9px;flex-shrink:0;box-shadow:0 0 8px #13d5ae}
+.remotePairButton{min-height:38px;padding:7px 16px;background:#247868}
+.remoteDisplay{position:relative;text-align:center;background:linear-gradient(155deg,#01080f,#060f1e);border:2px solid #32536a;border-radius:18px;margin-bottom:12px;padding:17px 12px 15px;box-shadow:inset 0 0 25px #001e2f}
+.remoteDisplayLabel{position:absolute;top:7px;left:14px;font-size:9px;letter-spacing:2px;color:#729aaa}
+.remoteDigits{font:bold clamp(42px,11.8vw,75px)/1.35 'Courier New',monospace;color:#28e5dc;text-shadow:0 0 9px #009ab3,0 0 22px #007485;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.remoteDisplay p{font-size:12px;color:#b1c5d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.remoteTransport,.remoteActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:10px 0}
+.remoteTransport button,.remoteActions button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;padding:11px 3px;border-radius:13px;border:1px solid #ffffff21;box-shadow:inset 0 1px 4px #ffffff24;line-height:1}
+.remoteTransport button span,.remoteActions button span{font-size:24px;font-weight:700}
+.remoteTransport small,.remoteActions small{font-size:clamp(8px,2.5vw,11px);font-weight:700}
+.rtReplay{background:linear-gradient(#1d66ad,#1c376c)}.rtPlay{background:linear-gradient(#217a5c,#13543d)}.rtNext{background:linear-gradient(#e3a035,#8a4c14)}.rtStop,.raCancel{background:linear-gradient(#be4850,#762030)}
+.remoteKeypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;background:#152236;border:1px solid #304359;border-radius:17px;padding:9px;margin-top:12px}
+.remoteKeypad button{background:linear-gradient(#2b3950,#1f2b3c);font-size:clamp(20px,6vw,32px);font-weight:700;min-height:55px;padding:7px;border:1px solid #384861;border-radius:12px}
+.remoteKeypad button:nth-last-child(3),.remoteKeypad button:last-child{font-size:21px}
+.raNow{background:linear-gradient(#1b9f95,#11616a)}.raReserve{background:linear-gradient(#dc7a2d,#854116)}.raFirst{background:linear-gradient(#ad3c86,#63264e)}
+.remoteAdjust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;background:#152236;border:1px solid #304359;border-radius:18px;padding:9px;margin:12px 0}
+.remoteAdjust>div{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:0}.remoteAdjust label{text-align:center;font-size:11px;letter-spacing:1px;color:#aebdd1}
+.remoteAdjust b{text-align:center;font-size:12px;padding:7px 0;color:#e8f5fb;font-variant-numeric:tabular-nums}
+.remoteAdjust button{padding:0;min-height:37px;background:#172b42;border-radius:8px;color:#55d6e6;font-size:24px}
+.remoteExtras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.remoteExtras button{min-height:44px;padding:7px 5px;font-size:12px;white-space:nowrap}.remoteFootnote{text-align:center;color:#839aad;font-size:11px;margin:14px 4px}
+.remote #songs .sectionTitle h1{font-size:24px;margin:8px 0}.remote #songs .sectionTitle button{display:none}
+.remoteSong{background:#142137;border:1px solid #293b53;border-radius:13px;padding:11px;margin:7px 0;gap:8px}
+.remoteSong .songInfo{cursor:pointer;padding:3px 0;outline-offset:5px}
+.remoteSong .songNumber{color:#4d93f0;font-size:15px;letter-spacing:.6px}
+.remoteSong .songTitle{font-size:14px}
+.remoteSong button{min-width:36px;min-height:38px;border-radius:9px;background:#22394d;color:#51e4d1}
+.remote #queue .song{background:#172439;border-radius:10px;padding:9px;margin:8px 0}
+.remoteLyricStage{height:min(66vh,680px);min-height:350px;border:1px solid #28495a;border-radius:20px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 22px;gap:22px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 76% 50% at 50% 100%,#28366d 1%,transparent 90%),repeating-radial-gradient(circle at 50% 110%,transparent 0,transparent 34px,#297d9233 36px,#15243f 40px,transparent 47px),linear-gradient(165deg,#071325,#231836)}
+.remoteLyricStage::before{content:"";position:absolute;inset:14% -48% -50%;border-radius:50%;border:2px solid #29d8cd;box-shadow:0 0 18px #1bafa4,0 0 32px #25dacd44;pointer-events:none}
+.remoteLyricStage>*{position:relative;text-shadow:0 2px 6px #02040d}
+.remoteLyricTop{font-size:20px;font-weight:700;color:#f6d077}
+.remoteLyricLine{font-size:clamp(24px,5vw,36px);font-weight:800;color:#fff;line-height:1.45}
+.remoteLyricNext{font-size:16px;color:#77efbe}
+.remoteLyricStage:fullscreen{height:100vh;width:100vw;border-radius:0}
+.remote .setting{padding:14px}
+@media(max-width:360px){.remoteTransport small,.remoteActions small{font-size:8px}.remoteTransport button span,.remoteActions button span{font-size:20px}.remoteKeypad button{min-height:48px}.remoteAdjust button{min-height:32px}.remote .filterrow{gap:8px}}

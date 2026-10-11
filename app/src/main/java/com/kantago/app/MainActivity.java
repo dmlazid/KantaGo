@@ -47,6 +47,8 @@ public class MainActivity extends Activity implements LocalServer.Api {
  int safePosition(){try{return media.getCurrentPosition();}catch(Exception e){return 0;}}int safeDuration(){try{return media.getDuration();}catch(Exception e){return 0;}}
  JSONObject command(JSONObject p)throws Exception{String a=p.getString("action"),id=p.optString("id");notice="";switch(a){
   case "play":play(find(id));break;case "reserve":find(id);if(queue.size()>=500)throw new Exception("Queue is full");queue.add(id);break;
+  case "reserveFirst":find(id);if(queue.size()>=500)throw new Exception("Queue is full");queue.add(0,id);break;
+  case "cancelReservation":find(id);if(!queue.remove(id))throw new Exception("This song is not reserved");break;
   case "remove":int i=p.getInt("index");if(i>=0&&i<queue.size())queue.remove(i);break;
   case "move":int from=p.getInt("index"),to=from+p.getInt("direction");if(from>=0&&from<queue.size()&&to>=0&&to<queue.size())Collections.swap(queue,from,to);break;
   case "clearQueue":queue.clear();break;

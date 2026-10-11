@@ -6,7 +6,7 @@ Offline Android videoke with a second phone as the remote. Navy, turquoise and g
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.2.0-test.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release.
+Open the newest release and tap **KantaGo-0.2.1-test.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release.
 
 ## First test
 1. Install the APK on your main Android device.
@@ -18,7 +18,11 @@ Open the newest release and tap **KantaGo-0.2.0-test.apk** under Assets. Android
 
 No internet is needed after you import the songs. Only metadata and control commands are needed for the remote; audio plays from the main device. No account, activation, ads, analytics, or cloud storage.
 
-## Included in 0.2.0
+## Included in 0.2.1
+- Dedicated paired-phone remote modeled on the supplied sample's workflow: digital song-number display, 12-key keypad, four transport buttons, Play Now / Reserve / Play First / Cancel Reservation, and separate Remote / Song List / Queue / Lyrics / Settings tabs.
+- Live remote volume, key, tempo, melody and reservation controls. Browser or another KantaGo installation can use the same private Wi-Fi connection. Browser QR pairing uses the phone's camera; there is no in-app QR scanner.
+- Remote has a lightweight current-lyrics preview, not a second streamed karaoke video.
+
 - Offline MIDI format 0/1 and KAR playback with a lightweight synthesized sound engine.
 - Embedded timed MIDI lyrics, and line-timed LRC for audio/video files.
 - Song numbers, search, favorites, editable language/year tags, sortable library, file-type filters, and surprise song.

@@ -29,12 +29,12 @@ jobs:
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.2.0-debug
+          name: KantaGo-0.2.1-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish test build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.0-test.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.1-test.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.2.0-test.apk --title "KantaGo 0.2.0 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "0.2.0: sortable song library, file-type filters, MP4 video fix, audio/video seeking, adjustable lyric sync, queue shuffle/reorder, paired Wi-Fi remote. Includes original demo only; no licensed commercial songs bundled. Test signing can change across builds; export/retain your original media files before replacing a test install."
+          gh release create "$TAG" KantaGo-0.2.1-test.apk --title "KantaGo 0.2.1 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "0.2.1: phone remote with videoke numeric keypad, play now/reserve/first/cancel, transport colors, queue and lyric tabs; also includes library filters, player seeking, and lyric sync. Includes original demo only; no licensed commercial songs bundled. Test signing can change across builds; export/retain your original media files before replacing a test install."
