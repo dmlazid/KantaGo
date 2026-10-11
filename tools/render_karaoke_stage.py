@@ -8,6 +8,13 @@ from pathlib import Path
 import numpy as np
 from PIL import Image,ImageDraw
 W,H,FPS,FRAMES=512,288,12,84
+def ffmpeg_binary():
+ import shutil
+ system=shutil.which('ffmpeg')
+ if system:return system
+ import imageio_ffmpeg
+ return imageio_ffmpeg.get_ffmpeg_exe()
+
 def poly(d,p,c):d.polygon([(int(x),int(y)) for x,y in p],fill=c)
 def circ(d,x,y,r,c):d.ellipse((int(x-r),int(y-r),int(x+r),int(y+r)),fill=c)
 def dancer(image,t,colors,center):
@@ -81,7 +88,7 @@ def frame(scene,index):
   dancer(im,t,((96,229,199,255),(177,255,231,255),(20,133,159,255)),(W*.5,141))
  return im.convert('RGB')
 def generate(path,scene):
- proc=subprocess.Popen(['ffmpeg','-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r',str(FPS),'-i','-','-an','-vcodec','libx264','-preset','veryfast','-crf','26','-pix_fmt','yuv420p','-movflags','+faststart',str(path)],stdin=subprocess.PIPE)
+ proc=subprocess.Popen([ffmpeg_binary(),'-hide_banner','-loglevel','error','-y','-f','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r',str(FPS),'-i','-','-an','-vcodec','libx264','-preset','veryfast','-crf','26','-pix_fmt','yuv420p','-movflags','+faststart',str(path)],stdin=subprocess.PIPE)
  for i in range(FRAMES):proc.stdin.write(frame(scene,i).tobytes())
  proc.stdin.close()
  if proc.wait():raise RuntimeError(f'Cannot create background {scene}')
