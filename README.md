@@ -3,14 +3,14 @@
 
 Offline Android videoke with a second phone as the remote. Navy, turquoise and gold interface.
 
-**KantaGo 0.3.0** is an **in-place update of the already installed KantaGo Preview 0.2.2**, keeping its app data and song library. The **app icon label is now just KantaGo**. For compatibility its internal Android application ID remains `com.kantago.app.preview` and the existing signing certificate is unchanged. Do not change this application ID or signing key.
+**KantaGo 0.4.0** is an **in-place update of the already installed KantaGo Preview 0.2.2**, keeping its app data and song library. The **app icon label is now just KantaGo**. For compatibility its internal Android application ID remains `com.kantago.app.preview` and the existing signing certificate is unchanged. Do not change this application ID or signing key.
 
 The separate original KantaGo 0.1.0 installation (`com.kantago.app`) cannot be upgraded by this APK because its debug signing key differed. Keep it installed to preserve its private songs. If both icons appear on the home screen, use the phone's **Remove shortcut** option on the original icon (never Uninstall); this only removes a home-screen shortcut, not the installed original app. Both installed apps may still appear in the app drawer, with the same display name. These two applications do not share their private data.
 
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.3.0.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. Install over the already installed **KantaGo 0.2.3** (or the earlier 0.2.2 Preview) and keep its imported songs and settings. **Do not uninstall your original KantaGo 0.1.0 installation.**
+Open the newest release and tap **KantaGo-0.4.0.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. Install over the already installed **KantaGo 0.2.3** (or the earlier 0.2.2 Preview) and keep its imported songs and settings. **Do not uninstall your original KantaGo 0.1.0 installation.**
 
 ## First test
 1. Install the APK on your main Android device.
@@ -22,7 +22,13 @@ Open the newest release and tap **KantaGo-0.3.0.apk** under Assets. Android 8 or
 
 No internet is needed after you import the songs. Only metadata and control commands are needed for the remote; audio plays from the main device. No account, activation, ads, analytics, or cloud storage.
 
-## Included in 0.3.0
+## Included in 0.4.0
+- **Karaoke-first home:** Enter Karaoke, Song Search, Artist Search, Recently Added, Media Player, Phone Remote, Add Song Packs, and shortcuts for language filters.
+- **Karaoke stage:** four original animated backgrounds (Prism, Neon, Retro, Spotlight), selected song display, synchronized MIDI/KAR/LRC lyrics; user-selected images/videos still supported.
+- **Compact SongHub-style handset workflow (original KantaGo artwork):** live stage, 5 transport controls, numeric keypad, play/reserve/cancel/first, mixer and live queue.
+- **Remote stability:** lower network request frequency and automatic reconnect with backoff. Still requires both phones on the same Wi-Fi/hotspot with the host in the foreground.
+- **Installed song library remains entirely offline.** External download-source tiles were removed from settings; no unauthorized third-party collections are included.
+
 - **Discover songs directory** with handpicked links for Karaoke Den, the 6,000+ MIDI pack index, MidKar, MIDI-Song, FreeMIDIs, a Scribd songbook, and Song Service. Opens in the device browser; no automated scraping or redistribution. Files downloaded separately can be imported if usage is permitted. `.7z` packs must be extracted first.
 - **In-app QR scanning** on the second Android phone using its rear camera. No separate browser needed; KantaGo checks QR links point to a private Wi-Fi/hotspot IP.
 - **One-tap backup ZIP** for imported song files and matching lyrics, with a JSON catalog included for records. Import ZIP restores playable media; individual song language/year tags may need to be set again.
@@ -51,7 +57,7 @@ No internet is needed after you import the songs. Only metadata and control comm
 - Keep the app in the foreground for reliable hosting/playback. Host backgrounds and lyrics use the main screen.
 - MP4 preview uses a muted video synchronized to the audio engine; device compatibility needs real-phone testing. MIDI seek is not yet supported.
 - Local connections use HTTP on your private network. Pair only trusted devices; do not expose the port on the internet.
-- The original KantaGo 0.1.x app was signed with a temporary debug key, so these 0.2.x builds cannot upgrade it directly. The 0.3.0 app retains the internal `com.kantago.app.preview` ID to upgrade 0.2.2 in place, but displays only **KantaGo**.
+- The original KantaGo 0.1.x app was signed with a temporary debug key, so these 0.2.x builds cannot upgrade it directly. The 0.4.0 app retains the internal `com.kantago.app.preview` ID to upgrade 0.2.2 in place, but displays only **KantaGo**.
 - The signing certificate remains in GitHub Actions cache and its public fingerprint is pinned by `signing/preview-cert.sha256`. If the cache expires, CI **fails** rather than publishing an incompatible build. This is not durable signing storage; set up encrypted-keystore release signing before broad distribution.
 - Original 0.1.0 and updated 0.2.x apps have separate libraries. Keep the original installed until its files are safely backed up. Uninstalling can delete its private song copies.
 
