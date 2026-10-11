@@ -12,6 +12,8 @@ java -cp /tmp/kantago-test com.kantago.app.ActivatedPackTest
 python3 tools/build_builtin_library.py --output app/src/main/assets/builtin
 javac -d /tmp/kantago-test app/src/main/java/com/kantago/app/MidiSong.java tests/BuiltinLibraryTest.java
 java -cp /tmp/kantago-test com.kantago.app.BuiltinLibraryTest app/src/main/assets/builtin
+javac -d /tmp/kantago-test app/src/main/java/com/kantago/app/MidiSong.java app/src/main/java/com/kantago/app/KaraokeCaptions.java tests/KaraokeCaptionsTest.java
+java -cp /tmp/kantago-test com.kantago.app.KaraokeCaptionsTest
 node --check app/src/main/assets/app.js
 
 node tests/ui-state.cjs
