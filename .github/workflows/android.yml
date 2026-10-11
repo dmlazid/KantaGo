@@ -21,20 +21,46 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      # Keep the new Preview package signed with the same test certificate.
+      # A GitHub Actions cache can expire. Never rely on it for production signing.
+      - name: Restore Preview test signing certificate
+        id: preview-key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: kantago-preview-debug-signing-v1
+      - name: Prepare Preview signing certificate
+        run: |
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            mkdir -p "$HOME/.android"
+            keytool -genkeypair -noprompt -keystore "$HOME/.android/debug.keystore"               -alias androiddebugkey -storepass android -keypass android               -keyalg RSA -keysize 2048 -validity 10000               -dname "CN=KantaGo Preview Test, O=KantaGo, C=PH"
+          fi
+          if [ -f signing/preview-cert.sha256 ]; then
+            EXPECTED="$(tr -d '[:space:]' < signing/preview-cert.sha256 | tr '[:lower:]' '[:upper:]')"
+            ACTUAL="$(keytool -list -v -keystore "$HOME/.android/debug.keystore"               -storepass android -alias androiddebugkey | sed -n 's/^[[:space:]]*SHA256:[[:space:]]*//p' | head -1 | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]')"
+            if [ "$EXPECTED" != "$ACTUAL" ]; then
+              echo "::error::Preview signing key is missing or changed. Build stopped to avoid another incompatible APK."
+              exit 1
+            fi
+          fi
       - name: Core checks
         run: |
           bash tests/run.sh
           node --check app/src/main/assets/app.js
       - name: Build installable test APK
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
+      - name: Show Preview certificate identity
+        run: |
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android             -alias androiddebugkey | grep -E "SHA256:" | head -1
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging             app/build/outputs/apk/debug/app-debug.apk | grep '^package:'
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.2.1-debug
+          name: KantaGo-0.2.2-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish test build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.1-test.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.2-test.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.2.1-test.apk --title "KantaGo 0.2.1 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "0.2.1: phone remote with videoke numeric keypad, play now/reserve/first/cancel, transport colors, queue and lyric tabs; also includes library filters, player seeking, and lyric sync. Includes original demo only; no licensed commercial songs bundled. Test signing can change across builds; export/retain your original media files before replacing a test install."
+          gh release create "$TAG" KantaGo-0.2.2-test.apk --title "KantaGo 0.2.2 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "KantaGo Preview is a separate install alongside your existing KantaGo 0.1.0. It cannot import old private app data automatically; original song files can be imported again. 0.2.2 includes the phone remote, song library filters, queue controls, and lyric sync. The Preview test signing key is reused from GitHub Actions cache; cache loss may require restoring its signing key. This is not production signing. Only original demo music is bundled."
