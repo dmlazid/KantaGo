@@ -33,13 +33,23 @@ public class MainActivity extends Activity implements LocalServer.Api {
   });
   web.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !r.getUrl().toString().startsWith(base+"/");}});web.addJavascriptInterface(new Bridge(),"Native");setContentView(web);home();
  }
+ String readAssetUtf8(String name,int limit)throws Exception{
+  try(InputStream in=getAssets().open(name);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+   byte[] buffer=new byte[8192];int n,total=0;
+   while((n=in.read(buffer))!=-1){
+    total+=n;if(total>limit)throw new IOException("Bundled catalog is too large");
+    out.write(buffer,0,n);
+   }
+   return out.toString("UTF-8");
+  }
+ }
  /** Install offline karaoke songs already packaged inside this APK.
   * Bundled song numbers 700001+ never collide with user-imported numbers.
   * On upgrades preserve imported media and all existing favorites.
   * Only the old shipped sound-check demo entry is retired automatically.
   */
  void installBuiltinKaraoke()throws Exception{
-  JSONArray included=new JSONArray(new String(readBytes(getAssets().open("builtin/catalog.json"),2*1024*1024),java.nio.charset.StandardCharsets.UTF_8));
+  JSONArray included=new JSONArray(readAssetUtf8("builtin/catalog.json",2*1024*1024));
   if(included.length()<40)throw new IOException("The bundled karaoke catalog is missing or incomplete");
   Set<String> known=new HashSet<>();
   for(int i=0;i<songs.length();i++)known.add(songs.getJSONObject(i).optString("id"));
