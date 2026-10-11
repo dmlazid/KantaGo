@@ -19,6 +19,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
  void home(){remote=false;web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
  class Bridge {
   @JavascriptInterface public void importFiles(String lang,String year,boolean folder){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent i=new Intent(folder?Intent.ACTION_OPEN_DOCUMENT_TREE:Intent.ACTION_OPEN_DOCUMENT);if(!folder){i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addCategory(Intent.CATEGORY_OPENABLE);}startActivityForResult(i,folder?11:10);});}
+  @JavascriptInterface public void importZip(String lang,String year){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.setType("*/*");intent.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(intent,13);});}
   @JavascriptInterface public void background(){ui.post(()->{if(remote)return;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/jpeg","image/png","video/mp4"});startActivityForResult(i,12);});}
   @JavascriptInterface public void pairing(){ui.post(()->showPairing());}
   @JavascriptInterface public void connect(String address){ui.post(()->connectRemote(address));}
@@ -75,6 +76,33 @@ public class MainActivity extends Activity implements LocalServer.Api {
  @Override public File background(){return bg;}
  @Override public File mediaFile(){try{return current==null?null:new File(root,current.getString("file"));}catch(Exception e){return null;}}
  @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null)return;final String language=importLanguage,year=importYear;importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
+ if(req==13){
+  Uri uri=data.getData();
+  if(uri==null||!displayName(uri).toLowerCase(Locale.ROOT).endsWith(".zip"))throw new IOException("Select a .zip song pack");
+  importStatus="Reading ZIP pack…";
+  SongPack.Result extracted=SongPack.importZip(getContentResolver().openInputStream(uri),root,(entries,added,skipped)->importStatus="ZIP: "+entries+" entries, "+added+" songs, "+skipped+" skipped…");
+  if(!extracted.files.isEmpty()){
+   FutureTask<Integer> task=new FutureTask<>(()->{
+    int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}
+    int releaseYear=y>=1900&&y<=2100?y:0;
+    JSONArray updated=new JSONArray(songs.toString());
+    for(String filename:extracted.files){
+     String label=filename.substring(0,filename.lastIndexOf('.'));
+     String[] parts=label.split(" - ",2);
+     String artist=parts.length>1?parts[0]:"Unknown artist";
+     String title=parts.length>1?parts[1]:label;
+     String songId=String.format(Locale.US,"%06d",updated.length()+1);
+     updated.put(new JSONObject().put("id",songId).put("title",title).put("artist",artist).put("language",language).put("year",releaseYear).put("file",filename).put("favorite",false));
+    }
+    JSONArray prior=songs;songs=updated;
+    try{save();}catch(Exception err){songs=prior;throw err;}
+    revision++;return extracted.files.size();
+   });
+   ui.post(task);task.get(30,TimeUnit.SECONDS);
+  }
+  importStatus="ZIP complete: "+extracted.files.size()+" songs, "+extracted.lyricFiles+" lyrics; "+extracted.skipped+" skipped.";
+  return;
+ }
  List<Uri> files=new ArrayList<>();if(req==11)walk(data.getData(),DocumentsContract.getTreeDocumentId(data.getData()),files,0);else if(data.getClipData()!=null){for(int i=0;i<data.getClipData().getItemCount();i++)files.add(data.getClipData().getItemAt(i).getUri());}else files.add(data.getData());
  int added=0,skipped=0;for(Uri u:files){String name=displayName(u).replaceAll("[^\\p{L}\\p{N} ._()-]","_");String ext=name.substring(Math.max(0,name.lastIndexOf('.')+1)).toLowerCase(Locale.ROOT);if(!Arrays.asList("mid","kar","mp3","mp4","wav","ogg","m4a","lrc").contains(ext)){skipped++;continue;}String normalized=name.substring(0,name.length()-ext.length())+ext;File dest=new File(root,normalized);if(dest.exists()){skipped++;continue;}try{copy(getContentResolver().openInputStream(u),dest,ext.equals("mid")||ext.equals("kar")?16L*1024*1024:500L*1024*1024);if(!ext.equals("lrc")){String title=name.replaceFirst("\\.[^.]+$","");String[] parts=title.split(" - ",2);final String artist=parts.length>1?parts[0]:"Unknown artist",songTitle=parts.length>1?parts[1]:title;FutureTask<Void> task=new FutureTask<>(()->{String id=String.format(Locale.US,"%06d",songs.length()+1);int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}songs.put(new JSONObject().put("id",id).put("title",songTitle).put("artist",artist).put("language",language).put("year",y>=1900&&y<=2100?y:0).put("file",normalized).put("favorite",false));save();revision++;return null;});ui.post(task);task.get(10,TimeUnit.SECONDS);added++;}}catch(Exception e){dest.delete();skipped++;}importStatus="Imported "+added+" songs…";}
  importStatus="Import complete: "+added+" songs; "+skipped+" skipped (duplicates or unsupported files).";
