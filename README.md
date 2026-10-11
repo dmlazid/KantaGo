@@ -6,7 +6,7 @@ Offline Android videoke with a second phone as the remote. Navy, turquoise and g
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.1.0-test.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release.
+Open the newest release and tap **KantaGo-0.2.0-test.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release.
 
 ## First test
 1. Install the APK on your main Android device.
@@ -18,10 +18,13 @@ Open the newest release and tap **KantaGo-0.1.0-test.apk** under Assets. Android
 
 No internet is needed after you import the songs. Only metadata and control commands are needed for the remote; audio plays from the main device. No account, activation, ads, analytics, or cloud storage.
 
-## Included in 0.1.0
+## Included in 0.2.0
 - Offline MIDI format 0/1 and KAR playback with a lightweight synthesized sound engine.
 - Embedded timed MIDI lyrics, and line-timed LRC for audio/video files.
-- Song numbers, search, favorites, queue and editable language/year tags.
+- Song numbers, search, favorites, editable language/year tags, sortable library, file-type filters, and surprise song.
+- Queue reorder (up/down), shuffle, and clear, supported through the paired phone remote.
+- Seek in audio/video tracks, adjust shared lyric timing ±0.5 seconds (up to ±10 seconds), and progressive timed-LRC line highlighting.
+- MP4 video stream now uses the selected song video rather than the background.
 - English, OPM, Bisaya, Foreign/Other filters; release-year/decade filters. **These organize imported music, not a supplied catalog.**
 - Key ±6 semitones, speed 50–150%, master volume; melody toggle mutes MIDI channel 1.
 - Default vector backdrop plus selectable local background image or muted MP4.
@@ -32,7 +35,7 @@ No internet is needed after you import the songs. Only metadata and control comm
 - Built-in MIDI tone quality is basic. SoundFont/SF2, full General MIDI instrument fidelity, pitch-bend, and advanced controller support are not implemented yet.
 - No microphone input/effects, recording, scoring, ZIP import, online song-pack updates, or Android TV certification yet.
 - Keep the app in the foreground for reliable hosting/playback. Host backgrounds and lyrics use the main screen.
-- MP4 preview uses a muted video synchronized to the audio engine; device compatibility needs real-phone testing.
+- MP4 preview uses a muted video synchronized to the audio engine; device compatibility needs real-phone testing. MIDI seek is not yet supported.
 - Local connections use HTTP on your private network. Pair only trusted devices; do not expose the port on the internet.
 - Current test APKs use development signing. A different signing key may require reinstalling; always retain original song files, since uninstalling removes imported copies. Production signing will be configured before stable releases.
 
@@ -41,6 +44,7 @@ Java 17, Android SDK 35 and Gradle 8.9:
 
 ```sh
 bash tests/run.sh
+node --check app/src/main/assets/app.js
 gradle :app:assembleDebug :app:lintDebug
 ```
 GitHub Actions publishes an installable test APK as a release and workflow artifact on each code push to main.

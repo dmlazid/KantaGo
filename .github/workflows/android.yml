@@ -22,17 +22,19 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Core checks
-        run: bash tests/run.sh
+        run: |
+          bash tests/run.sh
+          node --check app/src/main/assets/app.js
       - name: Build installable test APK
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.1.0-debug
+          name: KantaGo-0.2.0-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish test build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.1.0-test.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.0-test.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.1.0-test.apk --title "KantaGo 0.1.0 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "First test version. Offline MIDI/KAR with built-in synth and lyrics, MP3/MP4/LRC imports, paired Wi-Fi remote, queue, language/year tags and backgrounds. Includes an original demo only; no commercial song pack. Test signing can change across builds; export/retain your original media files before replacing a test install."
+          gh release create "$TAG" KantaGo-0.2.0-test.apk --title "KantaGo 0.2.0 · Test build ${GITHUB_RUN_NUMBER}" --prerelease --notes "0.2.0: sortable song library, file-type filters, MP4 video fix, audio/video seeking, adjustable lyric sync, queue shuffle/reorder, paired Wi-Fi remote. Includes original demo only; no licensed commercial songs bundled. Test signing can change across builds; export/retain your original media files before replacing a test install."

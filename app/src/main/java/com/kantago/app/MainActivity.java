@@ -5,9 +5,9 @@ import com.google.zxing.*;import com.google.zxing.common.BitMatrix;
 public class MainActivity extends Activity implements LocalServer.Api {
  WebView web;LocalServer server;final Handler ui=new Handler(Looper.getMainLooper());final ExecutorService io=Executors.newSingleThreadExecutor();final MidiEngine midi=new MidiEngine();
  JSONArray songs=new JSONArray();final ArrayList<String> queue=new ArrayList<>();JSONObject current;MediaPlayer media;MidiSong score;final List<double[]> lrcTimes=new ArrayList<>();final List<String> lrcText=new ArrayList<>();
- File root,bg;int key=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
+ File root,bg;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
  AudioManager audio;AudioFocusRequest focus;String importLanguage="Other",importYear="";
- @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);root=new File(getFilesDir(),"songs");root.mkdirs();
+ @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);root=new File(getFilesDir(),"songs");root.mkdirs();lyricOffset=getPreferences(0).getInt("lyricOffset",0);
   try{File library=new File(getFilesDir(),"library.json");if(library.exists())songs=new JSONArray(read(library));if(songs.length()==0){File f=new File(root,"demo.mid");copy(getAssets().open("demo.mid"),f,1024*1024);songs.put(new JSONObject().put("id","000001").put("title","KantaGo Sound Check").put("artist","KantaGo original demo").put("language","English").put("year",2026).put("file",f.getName()).put("favorite",false));save();}
    String bgName=getPreferences(0).getString("background","");if(!bgName.isEmpty()){File f=new File(getFilesDir(),bgName);if(f.exists()){bg=f;backgroundType=f.getName().endsWith("mp4")?"video":"image";}}
    server=new LocalServer(getAssets(),this);base="http://127.0.0.1:"+server.port;
@@ -29,29 +29,35 @@ public class MainActivity extends Activity implements LocalServer.Api {
   try{BitMatrix bits=new MultiFormatWriter().encode(addr+"/#token="+server.token,BarcodeFormat.QR_CODE,500,500);Bitmap b=Bitmap.createBitmap(500,500,Bitmap.Config.RGB_565);for(int y=0;y<500;y++)for(int x=0;x<500;x++)b.setPixel(x,y,bits.get(x,y)?0xff101827:0xffffffff);android.widget.ImageView image=new android.widget.ImageView(this);image.setImageBitmap(b);box.addView(image,new android.widget.LinearLayout.LayoutParams(-1,500));}catch(Exception ignored){}
  new AlertDialog.Builder(this).setTitle("Pair a remote").setView(box).setPositiveButton("Done",null).setNeutralButton("Copy address",(d,w)->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("KantaGo",addr));toast("Address copied. Pairing code: "+server.pin);}).show();}
  @Override public String call(String path,String body)throws Exception{FutureTask<String> job=new FutureTask<>(()->{if(path.equals("/api/state"))return state().toString();if(path.equals("/api/songs"))return publicSongs().toString();return command(new JSONObject(body)).toString();});ui.post(job);return job.get(8,TimeUnit.SECONDS);}
- JSONArray publicSongs()throws Exception{JSONArray a=new JSONArray();for(int i=0;i<songs.length();i++){JSONObject s=new JSONObject(songs.getJSONObject(i).toString());s.remove("file");a.put(s);}return a;}
+ JSONArray publicSongs()throws Exception{JSONArray a=new JSONArray();for(int i=0;i<songs.length();i++){JSONObject s=new JSONObject(songs.getJSONObject(i).toString());String filename=s.optString("file");int dot=filename.lastIndexOf('.');s.put("format",dot<0?"":filename.substring(dot+1).toLowerCase(Locale.ROOT));s.remove("file");a.put(s);}return a;}
  JSONObject find(String id)throws Exception{for(int i=0;i<songs.length();i++)if(songs.getJSONObject(i).getString("id").equals(id))return songs.getJSONObject(i);throw new Exception("Song number not found");}
  JSONObject state()throws Exception{double pos=score!=null?midi.position:media!=null?safePosition():0;double dur=score!=null?score.duration:media!=null?safeDuration():0;
+  double lyricPos=Math.max(0,pos+lyricOffset),lyricProgress=-1;
   StringBuilder before=new StringBuilder(),after=new StringBuilder();String next="";
   if(score!=null&&!score.lyrics.isEmpty()){
-   List<MidiSong.Event> lyrics=score.lyrics;int start=0;for(int i=0;i<lyrics.size()&&lyrics.get(i).ms<=pos;i++)if(newLine(lyrics.get(i).text))start=i;
-   boolean ended=false;for(int i=start;i<lyrics.size();i++){MidiSong.Event e=lyrics.get(i);if(i>start&&newLine(e.text)){ended=true;for(int j=i;j<lyrics.size()&&(j==i||!newLine(lyrics.get(j).text));j++)next+=clean(lyrics.get(j).text);break;}if(e.ms<=pos)before.append(clean(e.text));else after.append(clean(e.text));}
-  }else if(!lrcTimes.isEmpty()){int index=-1;for(int i=0;i<lrcTimes.size();i++)if(lrcTimes.get(i)[0]<=pos)index=i;before.append(index>=0?lrcText.get(index):"");if(index+1<lrcText.size())next=lrcText.get(index+1);}
+   List<MidiSong.Event> lyrics=score.lyrics;int start=0;for(int i=0;i<lyrics.size()&&lyrics.get(i).ms<=lyricPos;i++)if(newLine(lyrics.get(i).text))start=i;
+   boolean ended=false;for(int i=start;i<lyrics.size();i++){MidiSong.Event e=lyrics.get(i);if(i>start&&newLine(e.text)){ended=true;for(int j=i;j<lyrics.size()&&(j==i||!newLine(lyrics.get(j).text));j++)next+=clean(lyrics.get(j).text);break;}if(e.ms<=lyricPos)before.append(clean(e.text));else after.append(clean(e.text));}
+  }else if(!lrcTimes.isEmpty()){int index=-1;for(int i=0;i<lrcTimes.size();i++)if(lrcTimes.get(i)[0]<=lyricPos)index=i;before.append(index>=0?lrcText.get(index):"");if(index+1<lrcText.size())next=lrcText.get(index+1);if(index>=0){double start=lrcTimes.get(index)[0];double end=index+1<lrcTimes.size()?lrcTimes.get(index+1)[0]:Math.max(start+3000,dur);lyricProgress=Math.max(0,Math.min(1,(lyricPos-start)/Math.max(1,end-start)));}}
   JSONObject c=current==null?null:new JSONObject(current.toString());if(c!=null)c.remove("file");
   JSONArray q=new JSONArray();for(String id:queue){JSONObject s=new JSONObject(find(id).toString());s.remove("file");q.put(s);}
   if(!audioError.isEmpty()){notice=audioError;audioError="";paused=true;}
-  return new JSONObject().put("current",c==null?JSONObject.NULL:c).put("queue",q).put("playing",current!=null&&!paused&&!loading).put("isVideo",current!=null&&current.optString("file").endsWith(".mp4")).put("loading",loading).put("position",pos).put("duration",dur).put("key",key).put("tempo",tempo).put("volume",volume).put("melody",midi.melody).put("before",before.toString()).put("after",after.toString()).put("nextLyric",next).put("notice",notice).put("importStatus",importStatus).put("revision",revision).put("background",bg!=null).put("backgroundType",backgroundType).put("backgroundRevision",getPreferences(0).getLong("bgRevision",0));
+  return new JSONObject().put("current",c==null?JSONObject.NULL:c).put("queue",q).put("playing",current!=null&&!paused&&!loading).put("isVideo",current!=null&&current.optString("file").endsWith(".mp4")).put("loading",loading).put("position",pos).put("duration",dur).put("key",key).put("tempo",tempo).put("volume",volume).put("melody",midi.melody).put("before",before.toString()).put("after",after.toString()).put("nextLyric",next).put("lyricProgress",lyricProgress).put("lyricOffset",lyricOffset).put("seekable",media!=null&&!loading).put("notice",notice).put("importStatus",importStatus).put("revision",revision).put("background",bg!=null).put("backgroundType",backgroundType).put("backgroundRevision",getPreferences(0).getLong("bgRevision",0));
  }
  static boolean newLine(String s){return s.startsWith("/")||s.startsWith("\\")||s.startsWith("\r")||s.startsWith("\n");}static String clean(String s){return s.replace('/',' ').replace('\\',' ').replace('\r',' ').replace('\n',' ');}
  int safePosition(){try{return media.getCurrentPosition();}catch(Exception e){return 0;}}int safeDuration(){try{return media.getDuration();}catch(Exception e){return 0;}}
  JSONObject command(JSONObject p)throws Exception{String a=p.getString("action"),id=p.optString("id");notice="";switch(a){
   case "play":play(find(id));break;case "reserve":find(id);if(queue.size()>=500)throw new Exception("Queue is full");queue.add(id);break;
   case "remove":int i=p.getInt("index");if(i>=0&&i<queue.size())queue.remove(i);break;
+  case "move":int from=p.getInt("index"),to=from+p.getInt("direction");if(from>=0&&from<queue.size()&&to>=0&&to<queue.size())Collections.swap(queue,from,to);break;
+  case "clearQueue":queue.clear();break;
+  case "shuffleQueue":Collections.shuffle(queue);break;
   case "next":next();break;case "stop":stop();break;case "toggle":toggle();break;case "replay":if(current!=null)play(current);break;
   case "key":key=Math.max(-6,Math.min(6,p.getInt("value")));applyAudio();break;
   case "tempo":tempo=Math.max(.5,Math.min(1.5,p.getDouble("value")));applyAudio();break;
   case "volume":volume=Math.max(0,Math.min(1,p.getDouble("value")));applyAudio();break;
   case "melody":midi.melody=!midi.melody;break;
+  case "seek":if(media==null||loading)throw new Exception("Seeking works for audio and video songs only");media.seekTo((int)Math.max(0,Math.min(safeDuration(),p.getDouble("value"))));break;
+  case "lyricOffset":lyricOffset=Math.max(-10000,Math.min(10000,p.getInt("value")));getPreferences(0).edit().putInt("lyricOffset",lyricOffset).apply();break;
   case "favorite":JSONObject s=find(id);s.put("favorite",!s.optBoolean("favorite"));save();revision++;break;
   case "tag":JSONObject t=find(id);String lang=p.optString("language","Other");if(!Arrays.asList("English","OPM","Bisaya","Other").contains(lang))throw new Exception("Invalid language");int year=p.optInt("year",0);if(year!=0&&(year<1900||year>2100))throw new Exception("Use a year from 1900 to 2100");t.put("language",lang).put("year",year);save();revision++;break;
   default:throw new Exception("Unknown command");}return state();}

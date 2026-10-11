@@ -20,7 +20,7 @@ public final class LocalServer {
  if(path.startsWith("/api/")||(path.equals("/background")||path.equals("/media"))){
   String auth=h.getOrDefault("authorization","");String q=uri.getRawQuery();boolean bg=(path.equals("/background")||path.equals("/media"))&&q!=null&&q.equals("token="+token);
   if(!auth.equals("Bearer "+token)&&!bg){reply(out,403,"application/json","{\"error\":\"Pair this phone first\"}".getBytes());return;}
-  if((path.equals("/background")||path.equals("/media"))){File f=api.background();if(f==null){reply(out,404,"text/plain",new byte[0]);return;}sendFile(out,h,f);return;}
+  if((path.equals("/background")||path.equals("/media"))){File f=path.equals("/media")?api.mediaFile():api.background();if(f==null){reply(out,404,"text/plain",new byte[0]);return;}sendFile(out,h,f);return;}
   if((path.equals("/api/command")&&!method.equals("POST"))||(!path.equals("/api/command")&&!method.equals("GET"))){reply(out,405,"text/plain",new byte[0]);return;}
   if(!Arrays.asList("/api/state","/api/songs","/api/command").contains(path)){reply(out,404,"text/plain",new byte[0]);return;}
   try{reply(out,200,"application/json",api.call(path,json).getBytes(StandardCharsets.UTF_8));}catch(Exception e){reply(out,400,"application/json",new JSONObject().put("error",e.getMessage()==null?"Command failed":e.getMessage()).toString().getBytes());}return;
