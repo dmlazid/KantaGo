@@ -10,12 +10,12 @@ The separate original KantaGo 0.1.0 installation (`com.kantago.app`) cannot be u
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.2.4.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. Install over the existing **KantaGo Preview 0.2.2** and preserve its data; the installed app will be renamed **KantaGo**. **Do not uninstall your original KantaGo 0.1.0 installation.**
+Open the newest release and tap **KantaGo-0.2.4.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. Install over the already installed **KantaGo 0.2.3** (or the earlier 0.2.2 Preview) and keep its imported songs and settings. **Do not uninstall your original KantaGo 0.1.0 installation.**
 
 ## First test
 1. Install the APK on your main Android device.
 2. Tap **Start Videoke**, enter **000001**, and tap **Play now**. The original 17-second sound-check demo includes timed lyrics.
-3. Import your own `.mid` / `.kar` files or `.mp3` / `.mp4` / `.wav` / `.ogg` / `.m4a` files. For media lyrics, import a matching `.lrc` file with the same basename. Folder imports include subfolders. Extract ZIP packs before importing.
+3. Import your own `.mid` / `.kar` files or `.mp3` / `.mp4` / `.wav` / `.ogg` / `.m4a` files. For media lyrics, import a matching `.lrc` file with the same basename. Folder imports include subfolders. ZIP packs can now be imported directly.
 4. Choose **Import ZIP song pack** for a ZIP containing song files you have permission to use, optionally with matching `.lrc` lyric files. Subfolders are supported, but names are flattened and duplicate filenames are skipped. Select a language and optional release year when importing. Use the ⋯ button on a song to correct its tags. Names in `Artist - Title.ext` format are separated automatically.
 5. Connect another phone to the same private Wi-Fi or hotspot. Tap **Pair remote** on the main device. Scan its QR with the other phone's camera to open the browser remote, or install this same APK, choose **Connect as Remote**, enter the displayed `IP:port`, and use the six-digit pairing code.
 6. Keep the main app open. Song numbers, play/pause, queue, next, replay, volume, key and tempo work from the remote. Restarting the host app changes the session token and pairing code.
