@@ -55,12 +55,12 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging             app/build/outputs/apk/debug/app-debug.apk | grep '^package:'
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.2.3-debug
+          name: KantaGo-0.2.4-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish test build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.3.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.2.4.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.2.3.apk --title "KantaGo 0.2.3 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "Renamed installed KantaGo Preview to KantaGo. This is an in-place update for the previously installed 0.2.2 app; it does not alter the original 0.1.0 package. It cannot import old private app data automatically; original song files can be imported again. 0.2.3 includes the phone remote, song library filters, queue controls, and lyric sync. The Preview test signing key is reused from GitHub Actions cache; cache loss may require restoring its signing key. This is not production signing. Only original demo music is bundled."
+          gh release create "$TAG" KantaGo-0.2.4.apk --title "KantaGo 0.2.4 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "Renamed installed KantaGo Preview to KantaGo. This is an in-place update for the previously installed 0.2.2 app; it does not alter the original 0.1.0 package. It cannot import old private app data automatically; original song files can be imported again. 0.2.4 adds ZIP bulk song importing and retains paired-phone remote, library filters, queue and lyric controls. The Preview test signing key is reused from GitHub Actions cache; cache loss may require restoring its signing key. This is not production signing. Only original demo music is bundled."
