@@ -49,6 +49,13 @@ jobs:
         run: |
           bash tests/run.sh
           node --check app/src/main/assets/app.js
+      - name: Build and verify original starter collection
+        run: |
+          python3 -m pip install --disable-pip-version-check "cryptography>=44,<47"
+          python3 tools/create_original_demos.py --output "$RUNNER_TEMP/kantago-original-songs"
+          python3 tools/create_activated_pack.py --source "$RUNNER_TEMP/kantago-original-songs" --output KantaGo-Starter-Collection.kgpack --activation-key "KANTA-START-2026" --confirm-rights
+          javac -d /tmp/kantago-test app/src/main/java/com/kantago/app/MidiSong.java app/src/main/java/com/kantago/app/SongPack.java app/src/main/java/com/kantago/app/ActivatedPack.java tests/PackInteropTest.java
+          java -cp /tmp/kantago-test com.kantago.app.PackInteropTest KantaGo-Starter-Collection.kgpack
       - name: Build installable test APK
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
       - name: Show KantaGo certificate identity
@@ -64,9 +71,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 -m pip install --disable-pip-version-check "cryptography>=44,<47"
-          python3 tools/create_original_demos.py --output "$RUNNER_TEMP/kantago-original-songs"
-          python3 tools/create_activated_pack.py --source "$RUNNER_TEMP/kantago-original-songs" --output KantaGo-Starter-Collection.kgpack --activation-key "KANTA-START-2026" --confirm-rights
           cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.5.0.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" KantaGo-0.5.0.apk KantaGo-Starter-Collection.kgpack --title "KantaGo 0.5.0 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "KantaGo 0.5.0 includes an optional encrypted Starter Song Collection with 8 original karaoke practice tracks. Download KantaGo-Starter-Collection.kgpack and enter the starter activation key: KANTA-START-2026. No copyrighted or pirated commercial songs are included. Android package signing and user song data remain unchanged."
