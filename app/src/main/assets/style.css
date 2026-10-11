@@ -55,3 +55,9 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 .remoteLyricStage:fullscreen{height:100vh;width:100vw;border-radius:0}
 .remote .setting{padding:14px}
 @media(max-width:360px){.remoteTransport small,.remoteActions small{font-size:8px}.remoteTransport button span,.remoteActions button span{font-size:20px}.remoteKeypad button{min-height:48px}.remoteAdjust button{min-height:32px}.remote .filterrow{gap:8px}}
+
+/* 0.3.0 camera pairing and media backup */
+#scanConnect{min-height:56px;font-weight:800;background:linear-gradient(120deg,#3de8d1,#12bba8);color:#05292d}
+#remoteDisconnect{background:#502d3d;border-color:#76465a}
+#exportSongs{border-color:#3b9a91;background:linear-gradient(130deg,#214a52,#193143)}
+#connectDialog p.muted{margin:0 0 10px;font-size:12px}

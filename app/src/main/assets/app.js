@@ -6,13 +6,22 @@ function notify(text){if(!text)return;$('banner').textContent=text;$('banner').c
 async function api(path,body){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);try{const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:body?JSON.stringify(body):undefined,signal:controller.signal});let d=await r.json();if(r.status===403){token='';sessionStorage.removeItem('kantago-token');showPair();}if(!r.ok)throw Error(d.error||'Connection failed');return d;}finally{clearTimeout(timer);}}
 async function command(action,data={}){try{state=await api('command',{action,...data});renderState();}catch(e){notify(e.message);}}
 function page(p){if(!host&&(p==='home'||p==='player'))p='remoteControl';if(!host&&p==='settings')p='remoteSettings';activePage=p;document.querySelectorAll('.page').forEach(e=>e.classList.toggle('hidden',e.id!==p));document.querySelectorAll('nav button').forEach(e=>e.classList.toggle('active',e.dataset.page===p));if(p==='songs')renderSongs();window.scrollTo(0,0);}
-window.goHome=()=>page(host?'home':'remoteControl');document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));$('start').onclick=()=>page('player');$('connect').onclick=()=>$('connectDialog').showModal();$('connectSubmit').onclick=()=>{if(host){Native.connect($('hostAddress').value);$('connectDialog').close();}};
+window.goHome=()=>page(host?'home':'remoteControl');document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));$('start').onclick=()=>page('player');$('connect').onclick=()=>{
+ if(host&&typeof Native.previousRemote==='function')$('hostAddress').value=Native.previousRemote();
+ $('connectDialog').showModal();
+};$('connectSubmit').onclick=()=>{if(host){Native.connect($('hostAddress').value);$('connectDialog').close();}};
+$('scanConnect').onclick=()=>{if(host){$('connectDialog').close();Native.scanPair();}};
 $('pairTop').onclick=$('pairSettings').onclick=()=>host&&Native.pairing();function showPair(){if(!$('pairDialog').open)$('pairDialog').showModal();}
 $('pairSubmit').onclick=async()=>{try{const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pin').value})}),d=await r.json();if(!r.ok)throw Error(d.error);token=d.token;sessionStorage.setItem('kantago-token',token);$('pairDialog').close();$('pairError').textContent='';revision=-1;}catch(e){$('pairError').textContent=e.message;}};
 $('pairDialog').addEventListener('cancel',e=>e.preventDefault());
+$('remoteDisconnect').onclick=()=>{
+ if(typeof RemoteShell!=='undefined')RemoteShell.disconnect();
+ else{sessionStorage.removeItem('kantago-token');token='';showPair();}
+};
 function importDialog(){if(host)$('importDialog').showModal();else notify('Import songs on the main videoke device.');}['importHome','importSongs','importSettings'].forEach(id=>$(id).onclick=importDialog);
 function pick(folder){let year=$('importYear').value;if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}Native.importFiles($('importLang').value,year,folder);$('importDialog').close();}
 $('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);
+$('exportSongs').onclick=()=>{if(host)Native.exportSongs();else notify('Back up songs on the main KantaGo phone.');};
 $('pickZip').onclick=()=>{
  const year=$('importYear').value;
  if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}
