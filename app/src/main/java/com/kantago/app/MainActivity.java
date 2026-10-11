@@ -223,15 +223,26 @@ public class MainActivity extends Activity implements LocalServer.Api {
  JSONObject find(String id)throws Exception{for(int i=0;i<songs.length();i++)if(songs.getJSONObject(i).getString("id").equals(id))return songs.getJSONObject(i);throw new Exception("Song number not found");}
  JSONObject state()throws Exception{double pos=score!=null?midi.position:media!=null?safePosition():0;double dur=score!=null?score.duration:media!=null?safeDuration():0;
   double lyricPos=Math.max(0,pos+lyricOffset),lyricProgress=-1;
-  StringBuilder before=new StringBuilder(),after=new StringBuilder();String next="";
+  StringBuilder before=new StringBuilder(),after=new StringBuilder();String next="",lyricFull="";
   if(score!=null&&!score.lyrics.isEmpty()){
    List<MidiSong.Event> lyrics=score.lyrics;int start=0;for(int i=0;i<lyrics.size()&&lyrics.get(i).ms<=lyricPos;i++)if(newLine(lyrics.get(i).text))start=i;
-   boolean ended=false;for(int i=start;i<lyrics.size();i++){MidiSong.Event e=lyrics.get(i);if(i>start&&newLine(e.text)){ended=true;for(int j=i;j<lyrics.size()&&(j==i||!newLine(lyrics.get(j).text));j++)next+=clean(lyrics.get(j).text);break;}if(e.ms<=lyricPos)before.append(clean(e.text));else after.append(clean(e.text));}
-  }else if(!lrcTimes.isEmpty()){int index=-1;for(int i=0;i<lrcTimes.size();i++)if(lrcTimes.get(i)[0]<=lyricPos)index=i;before.append(index>=0?lrcText.get(index):"");if(index+1<lrcText.size())next=lrcText.get(index+1);if(index>=0){double start=lrcTimes.get(index)[0];double end=index+1<lrcTimes.size()?lrcTimes.get(index+1)[0]:Math.max(start+3000,dur);lyricProgress=Math.max(0,Math.min(1,(lyricPos-start)/Math.max(1,end-start)));}}
+   double lineEnd=dur;for(int i=start;i<lyrics.size();i++){
+    MidiSong.Event e=lyrics.get(i);
+    if(i>start&&newLine(e.text)){
+     lineEnd=e.ms;
+     for(int j=i;j<lyrics.size()&&(j==i||!newLine(lyrics.get(j).text));j++)next+=clean(lyrics.get(j).text);
+     break;
+    }
+    String fragment=clean(e.text);lyricFull.append(fragment);
+    if(e.ms<=lyricPos)before.append(fragment);else after.append(fragment);
+   }
+   double lineStart=lyrics.get(start).ms;
+   lyricProgress=Math.max(0,Math.min(1,(lyricPos-lineStart)/Math.max(1,lineEnd-lineStart)));
+  }else if(!lrcTimes.isEmpty()){int index=-1;for(int i=0;i<lrcTimes.size();i++)if(lrcTimes.get(i)[0]<=lyricPos)index=i;before.append(index>=0?lrcText.get(index):"");lyricFull.append(before);if(index+1<lrcText.size())next=lrcText.get(index+1);if(index>=0){double start=lrcTimes.get(index)[0];double end=index+1<lrcTimes.size()?lrcTimes.get(index+1)[0]:Math.max(start+3000,dur);lyricProgress=Math.max(0,Math.min(1,(lyricPos-start)/Math.max(1,end-start)));}}
   JSONObject c=current==null?null:new JSONObject(current.toString());if(c!=null)c.remove("file");
   JSONArray q=new JSONArray();for(String id:queue){JSONObject s=new JSONObject(find(id).toString());s.remove("file");q.put(s);}
   if(!audioError.isEmpty()){notice=audioError;audioError="";paused=true;}
-  return new JSONObject().put("current",c==null?JSONObject.NULL:c).put("queue",q).put("playing",current!=null&&!paused&&!loading).put("isVideo",current!=null&&current.optString("file").endsWith(".mp4")).put("loading",loading).put("position",pos).put("duration",dur).put("key",key).put("tempo",tempo).put("volume",volume).put("melody",midi.melody).put("before",before.toString()).put("after",after.toString()).put("nextLyric",next).put("lyricProgress",lyricProgress).put("lyricOffset",lyricOffset).put("seekable",media!=null&&!loading).put("notice",notice).put("importStatus",importStatus).put("revision",revision).put("background",bg!=null).put("backgroundType",backgroundType).put("backgroundRevision",getPreferences(0).getLong("bgRevision",0));
+  return new JSONObject().put("current",c==null?JSONObject.NULL:c).put("queue",q).put("playing",current!=null&&!paused&&!loading).put("isVideo",current!=null&&current.optString("file").endsWith(".mp4")).put("loading",loading).put("position",pos).put("duration",dur).put("key",key).put("tempo",tempo).put("volume",volume).put("melody",midi.melody).put("before",before.toString()).put("after",after.toString()).put("lyricFull",lyricFull.toString()).put("nextLyric",next).put("lyricProgress",lyricProgress).put("lyricOffset",lyricOffset).put("seekable",media!=null&&!loading).put("notice",notice).put("importStatus",importStatus).put("revision",revision).put("background",bg!=null).put("backgroundType",backgroundType).put("backgroundRevision",getPreferences(0).getLong("bgRevision",0));
  }
  static boolean newLine(String s){return s.startsWith("/")||s.startsWith("\\")||s.startsWith("\r")||s.startsWith("\n");}static String clean(String s){return s.replace('/',' ').replace('\\',' ').replace('\r',' ').replace('\n',' ');}
  int safePosition(){try{return media.getCurrentPosition();}catch(Exception e){return 0;}}int safeDuration(){try{return media.getDuration();}catch(Exception e){return 0;}}

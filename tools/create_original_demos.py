@@ -54,9 +54,13 @@ def midi_file(name, bpm, instrument, base, scale, lines, seed):
             add(t+int(ticks*.83),1,bytes([0x80,melody,0]))
         if bar%2==0:
             line=lines[(bar//2)%len(lines)]
-            # KAR lyric newline markers: a slash denotes a fresh line
-            lyric=("/"+line).encode("ascii")
-            add(start,0,b"\xff\x05"+variable(len(lyric))+lyric)
+            # Highlight each word in time instead of flashing the whole lyric line.
+            words=line.split()
+            for wi,word in enumerate(words):
+                fragment=("/" if wi==0 else "")+word+(" " if wi<len(words)-1 else "")
+                lyric=fragment.encode("utf-8")
+                at=start+int((wi*8*ticks)/max(1,len(words)))
+                add(at,0,b"\xff\x05"+variable(len(lyric))+lyric)
     end=24*4*ticks+1
     add(end,9,b"\xff\x2f\x00")
     events.sort(key=lambda ev:(ev[0],ev[1]))

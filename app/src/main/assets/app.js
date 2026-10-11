@@ -146,8 +146,8 @@ $('seek').addEventListener('pointercancel',()=>{seeking=false;});
 $('seek').onchange=()=>{seeking=false;command('seek',{value:Number($('seek').value)});};
 $('fullscreen').onclick=()=>{if($('stage').requestFullscreen)$('stage').requestFullscreen().catch(()=>notify('Fullscreen is unavailable on this device.'));};
 
-const scene=localStorage.getItem('kantago-scene')||'prism';
-$('stage').dataset.scene=['prism','neon','retro','spotlight'].includes(scene)?scene:'prism';
+const scene=localStorage.getItem('kantago-scene')||'auto';
+$('stage').dataset.scene=['auto','disco','sunset'].includes(scene)?scene:'auto';
 document.querySelectorAll('[data-scene-choice]').forEach(b=>{
  b.classList.toggle('selected',b.dataset.sceneChoice===$('stage').dataset.scene);
  b.onclick=()=>{
@@ -188,7 +188,29 @@ $('remoteLyricPlus').onclick=()=>command('lyricOffset',{delta:500});
 $('remoteLyricReset').onclick=()=>command('lyricOffset',{value:0});
 
 function time(ms){let n=Math.max(0,Math.floor(ms/1000));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');}
-let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle').textContent=s.playing?'Ⅱ':'▶';$('nowTitle').textContent=c?c.title:'Select a song';$('nowId').textContent=c?c.id+' · '+c.artist:'READY TO SING';$('clock').textContent=time(s.position||0)+' / '+time(s.duration||0);$('progress').value=s.duration?s.position/s.duration:0;$('lyricBefore').textContent=s.before||'';$('lyricAfter').textContent=s.after||'';$('nextLyric').textContent=s.nextLyric||(s.loading?'Preparing audio…':c&&!s.before&&!s.after?'Instrumental · no timed lyrics in this file':'');$('keyValue').textContent=(s.key>0?'+':'')+s.key;$('tempoValue').textContent=Math.round(s.tempo*100)+'%';if(document.activeElement!==$('volume'))$('volume').value=Math.round(s.volume*100);$('melody').textContent='Melody channel 1: '+(s.melody?'on':'off');$('lyricOffsetValue').textContent=((Number(s.lyricOffset)||0)/1000).toFixed(1)+'s';
+let playingStage='',activeSceneClip='';
+function updateAnimatedKaraoke(s){
+ const c=s.current,mode=$('stage').dataset.scene;
+ const selected=mode==='auto'?((Number((c?.id||'0').slice(-2))%2)?'sunset':'disco'):mode;
+ const url='/scenes/'+selected+'.mp4';
+ const scene=host?$('stageSceneVideo'):$('remoteStageVideo');
+ const inactive=host?$('remoteStageVideo'):$('stageSceneVideo');
+ if(!inactive.paused)inactive.pause();
+ const custom=host&&(!!s.background||!!s.isVideo);
+ scene.classList.toggle('hidden',!!custom);
+ if(!custom){
+  if(scene.getAttribute('src')!==url){scene.setAttribute('src',url);scene.load();}
+  // Video is muted and loops independently; only the MIDI/MP3 track provides sound.
+  if(s.playing){if(scene.paused)scene.play().catch(()=>{});}
+  else if(!scene.paused)scene.pause();
+ }
+ const percent=Math.round(Math.max(0,Math.min(1,Number(s.lyricProgress)||0))*100);
+ const full=s.lyricFull||(s.before||'')+(s.after||'');
+ const line=$('lyricFull'),remoteLine=$('remoteLiveLyrics');
+ line.textContent=full;line.style.setProperty('--fill',percent+'%');
+ remoteLine.textContent=full;remoteLine.style.setProperty('--fill',percent+'%');
+}
+let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle').textContent=s.playing?'Ⅱ':'▶';$('nowTitle').textContent=c?c.title:'Select a song';$('nowId').textContent=c?c.id+' · '+c.artist:'READY TO SING';$('clock').textContent=time(s.position||0)+' / '+time(s.duration||0);$('progress').value=s.duration?s.position/s.duration:0;$('lyricBefore').textContent=s.before||'';$('lyricAfter').textContent=s.after||'';updateAnimatedKaraoke(s);$('nextLyric').textContent=s.nextLyric||(s.loading?'Preparing audio…':c&&!s.before&&!s.after?'Instrumental · no timed lyrics in this file':'');$('keyValue').textContent=(s.key>0?'+':'')+s.key;$('tempoValue').textContent=Math.round(s.tempo*100)+'%';if(document.activeElement!==$('volume'))$('volume').value=Math.round(s.volume*100);$('melody').textContent='Melody channel 1: '+(s.melody?'on':'off');$('lyricOffsetValue').textContent=((Number(s.lyricOffset)||0)/1000).toFixed(1)+'s';
  const seek=$('seek');seek.disabled=!s.seekable;seek.max=Math.max(1,Math.round(s.duration||1));if(!seeking)seek.value=Math.min(Number(seek.max),Math.round(s.position||0));$('seekHint').textContent=s.seekable?'Drag to seek in this audio/video song':'Seeking available for audio/video songs';
  $('lyricBefore').classList.toggle('lineFill',Number(s.lyricProgress)>=0);$('lyricBefore').style.setProperty('--filled',Math.round(Math.max(0,Math.min(1,Number(s.lyricProgress)||0))*100)+'%');$('upNext').textContent=s.queue?.length?'Next: '+s.queue[0].title:'No reservations yet';
  $('stageIdle').classList.toggle('hidden',!!c);
