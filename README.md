@@ -7,6 +7,17 @@ Offline Android videoke with a second phone as the remote. Navy, turquoise and g
 
 The separate original KantaGo 0.1.0 installation (`com.kantago.app`) cannot be upgraded by this APK because its debug signing key differed. Keep it installed to preserve its private songs. If both icons appear on the home screen, use the phone's **Remove shortcut** option on the original icon (never Uninstall); this only removes a home-screen shortcut, not the installed original app. Both installed apps may still appear in the app drawer, with the same display name. These two applications do not share their private data.
 
+
+## APK signing compatibility incident (October 11, 2026)
+
+**Important for existing installs:** Android requires exactly the same application ID and APK signing certificate to update an installed app without uninstalling it. Early KantaGo debug APKs **were incorrectly signed using Android Gradle Plugin's default signing key at `/home/runner/.config/.android/debug.keystore`**, while the workflow checked a DIFFERENT key at `/home/runner/.android/debug.keystore`. Because the actual signing key changed per CI runner, GitHub Releases from builds 6, 7, 8, 17 and 19 were signed with different certificates. The keystore fingerprint checks in those workflows were therefore insufficient.
+
+The corrective change explicitly binds Gradle's debug signing configuration to the keystore whose fingerprint is pinned in `signing/preview-cert.sha256`, and verifies the **actual signed APK** using Android `apksigner verify --print-certs`. A different certificate causes CI to fail before publication.
+
+**This repair is for future builds only.** It cannot make a new APK update an old install signed with a transient, discarded private key. Users must **not uninstall** an app containing valuable imported songs before backing up the song library. On existing versions that offer it, use Settings → Save backup ZIP first. For earlier versions, recover existing files through their original sources, or use advanced ADB backup methods where available, before any reinstall. A separate future app ID can install side-by-side but will not automatically inherit private app data.
+
+The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
+
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
