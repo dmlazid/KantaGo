@@ -14,7 +14,7 @@ function command(action,data={}){
  });
  commandTail=result.catch(()=>{});return result;
 }
-function page(p){if(!host&&(p==='home'||p==='player'))p='remoteControl';if(!host&&p==='settings')p='remoteSettings';activePage=p;document.querySelectorAll('.page').forEach(e=>e.classList.toggle('hidden',e.id!==p));document.querySelectorAll('nav button').forEach(e=>e.classList.toggle('active',e.dataset.page===p));if(p==='songs')renderSongs();window.scrollTo(0,0);}
+function page(p){if(!host&&(p==='home'||p==='player'))p='remoteControl';if(!host&&p==='settings')p='remoteSettings';activePage=p;document.body.classList.toggle('karaokeScreen',host&&p==='player');document.querySelectorAll('.page').forEach(e=>e.classList.toggle('hidden',e.id!==p));document.querySelectorAll('nav button').forEach(e=>e.classList.toggle('active',e.dataset.page===p));if(p==='songs')renderSongs();window.scrollTo(0,0);}
 window.goHome=()=>page(host?'home':'remoteControl');document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));$('start').onclick=()=>page('player');
 $('hubBrowse').onclick=()=>page('songs');
 $('homeSongSearch').onclick=()=>{page('songs');$('search').focus();};
@@ -206,6 +206,6 @@ let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle
  }
  const msg=s.notice||s.importStatus;if(msg&&msg!==lastNotice){lastNotice=msg;notify(msg);}
 }
-let pollDelay=host?1100:1450;
-async function poll(){try{if(!token){showPair();return;}const epoch=stateEpoch,fresh=await api('state');if(pendingCommands||epoch!==stateEpoch)return;state=fresh;$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?1100:1450;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
+let pollDelay=host?200:700;
+async function poll(){try{if(!token){showPair();return;}const epoch=stateEpoch,fresh=await api('state');if(pendingCommands||epoch!==stateEpoch)return;state=fresh;$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?(activePage==='player'?200:1100):700;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
 page(activePage);poll();

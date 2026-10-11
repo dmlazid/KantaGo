@@ -24,7 +24,7 @@ The pinned debug key currently survives through GitHub Actions caching, which is
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.5.2.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
+Open the newest release and tap **KantaGo-0.5.3.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
 
 ## First test
 1. Install the APK on your main Android device.
@@ -121,3 +121,8 @@ The activation code is a file passphrase. It does **not** confer copyright permi
 - Version code increments to 2; APK signing and package identity checks remain enabled.
 
 Validation: automated command-state regressions plus existing parser, pack and pairing tests. Physical-phone audio, QR camera and two-phone playback still need device verification.
+
+## 0.5.3 recording comparison
+The supplied 47-second recording shows SongHub with 42,772 installed songs, a compact keypad and video backgrounds; KantaGo was showing original demos with controls below the viewport. This update keeps the host keypad beside playback controls, moves advanced mixer/background controls into Settings, increases lyric contrast and refreshes active host lyrics every 200 ms. Existing user-selected MP4 backgrounds remain supported; the recording itself is not bundled as an asset. This UI change does not supply the SongHub catalog or its instrument sounds.
+
+Source checks: Karaokeden returned HTTP 403; MidKar returned HTTP 406 for direct access; the Blogspot collection points to MediaFire downloads which returned an unavailable page here; the FreeMIDIs test download returned HTML rather than RAR bytes; MIDI-Song showed paid credits for a tested song; Scribd is a songbook PDF; Song Service is a music storefront. No new playable songs were successfully imported from those sources in this update.
