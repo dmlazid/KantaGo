@@ -3,6 +3,7 @@ import android.app.*;import android.os.*;import android.content.*;import android
 import java.io.*;import java.net.*;import java.util.*;import java.util.concurrent.*;import java.util.regex.*;import org.json.*;
 import com.google.zxing.*;import com.google.zxing.common.BitMatrix;
 public class MainActivity extends Activity implements LocalServer.Api {
+ View fullscreenView;WebChromeClient.CustomViewCallback fullscreenCallback;
  WebView web;LocalServer server;final Handler ui=new Handler(Looper.getMainLooper());final ExecutorService io=Executors.newSingleThreadExecutor();final MidiEngine midi=new MidiEngine();
  JSONArray songs=new JSONArray();final ArrayList<String> queue=new ArrayList<>();JSONObject current;MediaPlayer media;MidiSong score;final List<double[]> lrcTimes=new ArrayList<>();final List<String> lrcText=new ArrayList<>();
  File root,bg;QrCamera qrCamera;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
@@ -19,11 +20,21 @@ public class MainActivity extends Activity implements LocalServer.Api {
    }catch(Exception ignored){}
    server=new LocalServer(getAssets(),this);base="http://127.0.0.1:"+server.port;
   }catch(Exception e){new AlertDialog.Builder(this).setMessage("Could not start KantaGo: "+e.getMessage()).setPositiveButton("Close",(d,w)->finish()).show();return;}
-  audio=(AudioManager)getSystemService(AUDIO_SERVICE);focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build()).setOnAudioFocusChangeListener(change->{if(change<0)ui.post(()->{if(current!=null&&!paused)toggle();});}).build();
-  web=new WebView(this);web.setBackgroundColor(0xff101827);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setAllowFileAccess(false);web.getSettings().setAllowContentAccess(false);web.getSettings().setMediaPlaybackRequiresUserGesture(false);web.setWebChromeClient(new WebChromeClient());
+  audio=(AudioManager)getSystemService(AUDIO_SERVICE);focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build()).setOnAudioFocusChangeListener(change->{if(change<0)ui.post(()->{if(current!=null){paused=true;midi.paused=true;if(media!=null&&!loading)media.pause();}});}).build();
+  web=new WebView(this);web.setBackgroundColor(0xff101827);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setAllowFileAccess(false);web.getSettings().setAllowContentAccess(false);web.getSettings().setMediaPlaybackRequiresUserGesture(false);web.setWebChromeClient(new WebChromeClient(){
+   @Override public void onShowCustomView(View view,CustomViewCallback callback){
+    if(fullscreenView!=null){callback.onCustomViewHidden();return;}
+    fullscreenView=view;fullscreenCallback=callback;
+    ((android.widget.FrameLayout)getWindow().getDecorView()).addView(view,new android.widget.FrameLayout.LayoutParams(-1,-1));
+    web.setVisibility(View.GONE);
+    view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+   }
+   @Override public void onHideCustomView(){exitFullscreen();}
+  });
   web.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !r.getUrl().toString().startsWith(base+"/");}});web.addJavascriptInterface(new Bridge(),"Native");setContentView(web);home();
  }
- void home(){remote=false;web.removeJavascriptInterface("RemoteShell");web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
+ void exitFullscreen(){if(fullscreenView==null)return;((android.view.ViewGroup)fullscreenView.getParent()).removeView(fullscreenView);fullscreenView=null;web.setVisibility(View.VISIBLE);web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);WebChromeClient.CustomViewCallback callback=fullscreenCallback;fullscreenCallback=null;if(callback!=null)callback.onCustomViewHidden();}
+ void home(){exitFullscreen();remote=false;web.removeJavascriptInterface("RemoteShell");web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
  class RemoteShell{
   @JavascriptInterface public void disconnect(){ui.post(()->home());}
  }
@@ -154,24 +165,24 @@ public class MainActivity extends Activity implements LocalServer.Api {
   case "clearQueue":queue.clear();break;
   case "shuffleQueue":Collections.shuffle(queue);break;
   case "next":next();break;case "stop":stop();break;case "toggle":toggle();break;case "replay":if(current!=null)play(current);break;
-  case "key":key=Math.max(-6,Math.min(6,p.getInt("value")));applyAudio();break;
-  case "tempo":tempo=Math.max(.5,Math.min(1.5,p.getDouble("value")));applyAudio();break;
-  case "volume":volume=Math.max(0,Math.min(1,p.getDouble("value")));applyAudio();break;
+  case "key":key=Math.max(-6,Math.min(6,(int)(p.has("delta")?key+p.getDouble("delta"):p.getInt("value"))));applyAudio();break;
+  case "tempo":tempo=Math.max(.5,Math.min(1.5,p.has("delta")?tempo+p.getDouble("delta"):p.getDouble("value")));applyAudio();break;
+  case "volume":volume=Math.max(0,Math.min(1,p.has("delta")?volume+p.getDouble("delta"):p.getDouble("value")));applyAudio();break;
   case "melody":midi.melody=!midi.melody;break;
   case "seek":if(media==null||loading)throw new Exception("Seeking works for audio and video songs only");media.seekTo((int)Math.max(0,Math.min(safeDuration(),p.getDouble("value"))));break;
-  case "lyricOffset":lyricOffset=Math.max(-10000,Math.min(10000,p.getInt("value")));getPreferences(0).edit().putInt("lyricOffset",lyricOffset).apply();break;
+  case "lyricOffset":lyricOffset=Math.max(-10000,Math.min(10000,p.has("delta")?lyricOffset+p.getInt("delta"):p.getInt("value")));getPreferences(0).edit().putInt("lyricOffset",lyricOffset).apply();break;
   case "favorite":JSONObject s=find(id);s.put("favorite",!s.optBoolean("favorite"));save();revision++;break;
   case "tag":JSONObject t=find(id);String lang=p.optString("language","Other");if(!Arrays.asList("English","OPM","Bisaya","Other").contains(lang))throw new Exception("Invalid language");int year=p.optInt("year",0);if(year!=0&&(year<1900||year>2100))throw new Exception("Use a year from 1900 to 2100");t.put("language",lang).put("year",year);save();revision++;break;
   default:throw new Exception("Unknown command");}
   if(Arrays.asList("reserve","reserveFirst","cancelReservation","remove","move","clearQueue","shuffleQueue").contains(a))saveQueue();
   return state();}
  void play(JSONObject song)throws Exception{stop();current=song;paused=false;loading=true;int generation=++playGeneration;File f=new File(root,song.getString("file"));audio.requestAudioFocus(focus);
-  if(f.getName().endsWith(".mid")||f.getName().endsWith(".kar")){io.execute(()->{try{MidiSong parsed=MidiSong.parse(readBytes(f,16*1024*1024));ui.post(()->{if(destroyed||generation!=playGeneration)return;score=parsed;loading=false;applyAudio();midi.play(parsed,()->ui.post(()->{if(generation==playGeneration)next();}));});}catch(Exception e){ui.post(()->{if(generation==playGeneration){stop();notice="Cannot play MIDI: "+e.getMessage();}});}});
-  }else {loadLrc(f);media=new MediaPlayer();media.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build());media.setDataSource(f.getAbsolutePath());media.setOnPreparedListener(m->{if(generation!=playGeneration)return;loading=false;applyAudio();m.start();});media.setOnCompletionListener(m->{if(generation==playGeneration)next();});media.setOnErrorListener((m,w,e)->{if(generation==playGeneration){stop();notice="This media file could not be played.";}return true;});media.prepareAsync();}
+  if(f.getName().endsWith(".mid")||f.getName().endsWith(".kar")){io.execute(()->{try{MidiSong parsed=MidiSong.parse(readBytes(f,16*1024*1024));ui.post(()->{if(destroyed||generation!=playGeneration)return;score=parsed;loading=false;applyAudio();midi.play(parsed,()->ui.post(()->{if(generation==playGeneration)next();}));midi.paused=paused;});}catch(Exception e){ui.post(()->{if(generation==playGeneration){stop();notice="Cannot play MIDI: "+e.getMessage();}});}});
+  }else {loadLrc(f);media=new MediaPlayer();media.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build());media.setDataSource(f.getAbsolutePath());media.setOnPreparedListener(m->{if(generation!=playGeneration)return;loading=false;applyAudio();if(!paused)m.start();});media.setOnCompletionListener(m->{if(generation==playGeneration)next();});media.setOnErrorListener((m,w,e)->{if(generation==playGeneration){stop();notice="This media file could not be played.";}return true;});media.prepareAsync();}
  }
  void stop(){playGeneration++;midi.stop();if(media!=null){media.release();media=null;}score=null;current=null;loading=false;paused=false;lrcTimes.clear();lrcText.clear();if(audio!=null&&focus!=null)audio.abandonAudioFocusRequest(focus);}
  void next(){stop();if(!queue.isEmpty())try{String id=queue.remove(0);saveQueue();play(find(id));}catch(Exception e){notice=e.getMessage();}}
- void toggle(){if(current==null){next();return;}if(loading)return;paused=!paused;midi.paused=paused;if(media!=null){if(paused)media.pause();else{audio.requestAudioFocus(focus);media.start();}}}
+ void toggle(){if(current==null){next();return;}if(loading)return;if(paused&&audio.requestAudioFocus(focus)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED){notice="Audio is busy. Try playing again after the interruption.";return;}paused=!paused;midi.paused=paused;if(media!=null){if(paused)media.pause();else{media.start();}}}
  void applyAudio(){midi.key=key;midi.tempo=tempo;midi.volume=volume;if(media!=null&&!loading)try{media.setVolume((float)volume,(float)volume);media.setPlaybackParams(new PlaybackParams().setSpeed((float)tempo).setPitch((float)Math.pow(2,key/12.0)));if(paused)media.pause();}catch(Exception e){notice="Pitch/tempo unavailable for this media format.";}}
  void loadLrc(File f){File l=new File(root,f.getName().replaceFirst("\\.[^.]+$","")+".lrc");if(!l.exists())return;try{Pattern pattern=Pattern.compile("\\[(\\d+):(\\d+(?:\\.\\d+)?)\\]");TreeMap<Double,String> lines=new TreeMap<>();for(String line:read(l).split("\n")){Matcher m=pattern.matcher(line);String text=line.replaceAll("\\[[^]]*\\]","").trim();while(m.find())lines.put(Integer.parseInt(m.group(1))*60000+Double.parseDouble(m.group(2))*1000,text);}for(Map.Entry<Double,String> e:lines.entrySet()){lrcTimes.add(new double[]{e.getKey()});lrcText.add(e.getValue());}}catch(Exception e){notice="Could not read the matching LRC lyrics.";}}
  @Override public File background(){return bg;}
@@ -251,6 +262,6 @@ public class MainActivity extends Activity implements LocalServer.Api {
  static String read(File f)throws Exception{return new String(readBytes(f,20*1024*1024),java.nio.charset.StandardCharsets.UTF_8);}
  void save()throws Exception{android.util.AtomicFile f=new android.util.AtomicFile(new File(getFilesDir(),"library.json"));FileOutputStream out=f.startWrite();try{out.write(songs.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));f.finishWrite(out);}catch(Exception e){f.failWrite(out);throw e;}}
  void toast(String s){android.widget.Toast.makeText(this,s,android.widget.Toast.LENGTH_LONG).show();}
- @Override public void onBackPressed(){if(remote){home();return;}web.evaluateJavascript("window.goHome && window.goHome()",null);}
+ @Override public void onBackPressed(){if(fullscreenView!=null){exitFullscreen();return;}if(remote){home();return;}web.evaluateJavascript("window.goHome && window.goHome()",null);}
  @Override protected void onDestroy(){destroyed=true;if(qrCamera!=null)qrCamera.close();saveQueue();stop();if(server!=null)server.close();io.shutdownNow();if(web!=null)web.destroy();super.onDestroy();}
 }

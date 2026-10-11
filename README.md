@@ -3,7 +3,9 @@
 
 Offline Android videoke with a second phone as the remote. Navy, turquoise and gold interface.
 
-**KantaGo 0.5.1 – safe recovery installation.** This version has the normal visible app name **KantaGo**, but an intentionally new Android package ID `com.kantago.player`. Android installs it **beside** earlier KantaGo installations. This is necessary because older builds were signed with different keys and cannot update each other.
+**KantaGo 0.5.2 – playback and remote fixes.** Version 0.5.2 updates 0.5.1 in place using the same package and signing certificate. Earlier incompatible builds remain separate.
+
+**Recovery installation introduced in 0.5.1.** This version has the normal visible app name **KantaGo**, but an intentionally new Android package ID `com.kantago.player`. Android installs it **beside** earlier KantaGo installations. This is necessary because older builds were signed with different keys and cannot update each other.
 
 **Do not uninstall older KantaGo** unless you have independently backed up imported songs and want to remove its old app icon. Earlier song data stays safely inside its original installation; it **cannot automatically transfer** to the newly installed KantaGo. You can import original copies of MIDI/KAR/ZIP/7z files again, or use Settings → Export ZIP in older versions that have that feature.
 
@@ -22,7 +24,7 @@ The pinned debug key currently survives through GitHub Actions caching, which is
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.5.1.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
+Open the newest release and tap **KantaGo-0.5.2.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
 
 ## First test
 1. Install the APK on your main Android device.
@@ -52,7 +54,7 @@ No internet is needed after you import the songs. Only metadata and control comm
 - **Saved reservation queue** survives closing and reopening the app; songs do not auto-play on restart.
 - **Disconnect remote** control and remembered host Wi-Fi address, while maintaining manual pairing as a fallback.
 - Dedicated paired-phone remote modeled on the supplied sample's workflow: digital song-number display, 12-key keypad, four transport buttons, Play Now / Reserve / Play First / Cancel Reservation, and separate Remote / Song List / Queue / Lyrics / Settings tabs.
-- Live remote volume, key, tempo, melody and reservation controls. Browser or another KantaGo installation can use the same private Wi-Fi connection. Browser QR pairing uses the phone's camera; there is no in-app QR scanner.
+- Live remote volume, key, tempo, melody and reservation controls. Browser or another KantaGo installation can use the same private Wi-Fi connection. In-app QR scanning and manual PIN pairing are both available.
 - Remote has a lightweight current-lyrics preview, not a second streamed karaoke video.
 
 - **ZIP / 7z song-pack import** with safe streaming extraction, path traversal protection, no overwriting existing songs, and limits of 2,500 entries / 1 GB expanded per pack. ZIP packs require user-owned or licensed files.
@@ -74,7 +76,7 @@ No internet is needed after you import the songs. Only metadata and control comm
 - Keep the app in the foreground for reliable hosting/playback. Host backgrounds and lyrics use the main screen.
 - MP4 preview uses a muted video synchronized to the audio engine; device compatibility needs real-phone testing. MIDI seek is not yet supported.
 - Local connections use HTTP on your private network. Pair only trusted devices; do not expose the port on the internet.
-- The original KantaGo 0.1.x app was signed with a temporary debug key, so these 0.2.x builds cannot upgrade it directly. The 0.5.0 app retains the internal `com.kantago.app.preview` ID to upgrade 0.2.2 in place, but displays only **KantaGo**.
+- Versions 0.5.1 and 0.5.2 use `com.kantago.player`. Earlier installations with different package IDs or signing keys remain separate.
 - The signing certificate remains in GitHub Actions cache and its public fingerprint is pinned by `signing/preview-cert.sha256`. If the cache expires, CI **fails** rather than publishing an incompatible build. This is not durable signing storage; set up encrypted-keystore release signing before broad distribution.
 - Original 0.1.0 and updated 0.2.x apps have separate libraries. Keep the original installed until its files are safely backed up. Uninstalling can delete its private song copies.
 
@@ -110,3 +112,12 @@ python tools/create_activated_pack.py --source /path/to/authorized-music --outpu
 ```
 The activation code is a file passphrase. It does **not** confer copyright permissions, prevent an authorized recipient from re-sharing extracted media, or validate a paid purchase. The free starter code is public in the release notes. Packs are limited to 768 MB of ZIP-compressed media and 2,500 entries; larger collections require several bundles.
 
+
+## 0.5.2 fixes
+- Failed reservations and failed playback no longer show success messages; invalid tag edits stay open.
+- Remote commands run in order. Key, tempo, volume and lyric adjustments use the current host value, and old polling responses cannot overwrite newer controls.
+- MIDI resume requests audio focus; interruptions during loading remain paused.
+- Android WebView fullscreen now displays and exits its custom view; Back exits fullscreen first.
+- Version code increments to 2; APK signing and package identity checks remain enabled.
+
+Validation: automated command-state regressions plus existing parser, pack and pairing tests. Physical-phone audio, QR camera and two-phone playback still need device verification.

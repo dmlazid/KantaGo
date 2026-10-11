@@ -10,3 +10,5 @@ java -cp /tmp/kantago-test com.kantago.app.PairingUrlTest
 javac -d /tmp/kantago-test app/src/main/java/com/kantago/app/SongPack.java app/src/main/java/com/kantago/app/ActivatedPack.java tests/ActivatedPackTest.java
 java -cp /tmp/kantago-test com.kantago.app.ActivatedPackTest
 node --check app/src/main/assets/app.js
+
+node tests/ui-state.cjs

@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'com.kantago.app'
  compileSdk 35
- defaultConfig { applicationId 'com.kantago.player'; minSdk 26; targetSdk 34; versionCode 1; versionName '0.5.1' }
+ defaultConfig { applicationId 'com.kantago.player'; minSdk 26; targetSdk 34; versionCode 2; versionName '0.5.2' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  // Explicitly use the same cached signing key checked by GitHub Actions.
  // Android Gradle Plugin defaults to $ANDROID_USER_HOME, which on GitHub runners

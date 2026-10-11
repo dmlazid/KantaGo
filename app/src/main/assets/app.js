@@ -4,7 +4,16 @@ let token=fragment.get('token')||sessionStorage.getItem('kantago-token')||'',son
 if(token){sessionStorage.setItem('kantago-token',token);history.replaceState(null,'',location.pathname);}if(!host)document.body.classList.add('remote');
 function notify(text){if(!text)return;$('banner').textContent=text;$('banner').classList.remove('hidden');clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('banner').classList.add('hidden'),5500);}
 async function api(path,body){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);try{const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:body?JSON.stringify(body):undefined,signal:controller.signal});let d=await r.json();if(r.status===403){token='';sessionStorage.removeItem('kantago-token');showPair();}if(!r.ok)throw Error(d.error||'Connection failed');return d;}finally{clearTimeout(timer);}}
-async function command(action,data={}){try{state=await api('command',{action,...data});renderState();}catch(e){notify(e.message);}}
+let commandTail=Promise.resolve(),pendingCommands=0,stateEpoch=0;
+function command(action,data={}){
+ pendingCommands++;stateEpoch++;
+ const result=commandTail.then(async()=>{
+  try{state=await api('command',{action,...data});renderState();return true;}
+  catch(e){notify(e.message);return false;}
+  finally{pendingCommands--;stateEpoch++;}
+ });
+ commandTail=result.catch(()=>{});return result;
+}
 function page(p){if(!host&&(p==='home'||p==='player'))p='remoteControl';if(!host&&p==='settings')p='remoteSettings';activePage=p;document.querySelectorAll('.page').forEach(e=>e.classList.toggle('hidden',e.id!==p));document.querySelectorAll('nav button').forEach(e=>e.classList.toggle('active',e.dataset.page===p));if(p==='songs')renderSongs();window.scrollTo(0,0);}
 window.goHome=()=>page(host?'home':'remoteControl');document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>page(b.dataset.page));$('start').onclick=()=>page('player');
 $('hubBrowse').onclick=()=>page('songs');
@@ -100,7 +109,7 @@ function renderSongs(){
    row.append(info,btn('＋',()=>command('reserve',{id:s.id}),'Reserve '+s.title),btn('▶',()=>{command('play',{id:s.id});page('remoteControl');},'Play '+s.title));
   }else{
    row.append(info,btn(s.favorite?'★':'☆',()=>command('favorite',{id:s.id}),'Toggle favorite'),
-   btn('＋',()=>command('reserve',{id:s.id}).then(()=>notify('Reserved '+s.title)),'Reserve song'),
+   btn('＋',()=>command('reserve',{id:s.id}).then(ok=>{if(ok)notify('Reserved '+s.title);}),'Reserve song'),
    btn('▶',()=>{command('play',{id:s.id});page('player');},'Play song'),
    btn('⋯',()=>{tagId=s.id;$('tagLang').value=s.language;$('tagYear').value=s.year||'';$('tagDialog').showModal();},'Edit tags'));
   }
@@ -108,14 +117,14 @@ function renderSongs(){
  });
  $('more').classList.toggle('hidden',visibleSongs.length<=limit);
 }
-$('randomSong').onclick=()=>{const pool=filteredSongs();if(!pool.length){notify('No songs match your filters.');return;}const song=pool[Math.floor(Math.random()*pool.length)];command('play',{id:song.id});page('player');notify('Now playing: '+song.title);};
+$('randomSong').onclick=()=>{const pool=filteredSongs();if(!pool.length){notify('No songs match your filters.');return;}const song=pool[Math.floor(Math.random()*pool.length)];command('play',{id:song.id}).then(ok=>{if(ok){page('player');notify('Now playing: '+song.title);}});};
 $('clearFilters').onclick=()=>{$('search').value='';$('era').value='all';$('favorites').checked=false;$('fileType').value='all';language='All';document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('selected',b.dataset.lang==='All'));limit=60;renderSongs();};
-$('saveTag').onclick=async()=>{await command('tag',{id:tagId,language:$('tagLang').value,year:Number($('tagYear').value)||0});$('tagDialog').close();};
+$('saveTag').onclick=async()=>{if(await command('tag',{id:tagId,language:$('tagLang').value,year:Number($('tagYear').value)||0}))$('tagDialog').close();};
 for(const k of ['1','2','3','4','5','6','7','8','9','CLR','0','⌫'])$('keypad').append(btn(k,()=>{let n=$('number');if(k==='CLR')n.value='';else if(k==='⌫')n.value=n.value.slice(0,-1);else n.value=(n.value+k).slice(0,6);}));$('number').oninput=()=>$('number').value=$('number').value.replace(/\D/g,'').slice(0,6);
-function numberAction(action){let n=$('number').value;if(!n){notify('Enter a song number first.');return;}command(action,{id:n.padStart(6,'0')});}$('reserve').onclick=()=>numberAction('reserve');$('playNow').onclick=()=>numberAction('play');$('mainCancel').onclick=()=>numberAction('cancelReservation');$('mainFirst').onclick=()=>numberAction('reserveFirst');document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>command(b.dataset.action));document.querySelectorAll('[data-adjust]').forEach(b=>b.onclick=()=>{let [k,v]=b.dataset.adjust.split(':');command(k,{value:(Number(state[k])||0)+Number(v)});});$('volume').onchange=()=>command('volume',{value:Number($('volume').value)/100});$('shuffleQueue').onclick=()=>command('shuffleQueue');
+function numberAction(action){let n=$('number').value;if(!n){notify('Enter a song number first.');return;}command(action,{id:n.padStart(6,'0')});}$('reserve').onclick=()=>numberAction('reserve');$('playNow').onclick=()=>numberAction('play');$('mainCancel').onclick=()=>numberAction('cancelReservation');$('mainFirst').onclick=()=>numberAction('reserveFirst');document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>command(b.dataset.action));document.querySelectorAll('[data-adjust]').forEach(b=>b.onclick=()=>{let [k,v]=b.dataset.adjust.split(':');command(k,{delta:Number(v)});});$('volume').onchange=()=>command('volume',{value:Number($('volume').value)/100});$('shuffleQueue').onclick=()=>command('shuffleQueue');
 $('clearQueue').onclick=()=>{if((state.queue||[]).length&&confirm('Clear all reserved songs?'))command('clearQueue');};
-$('lyricMinus').onclick=()=>command('lyricOffset',{value:(Number(state.lyricOffset)||0)-500});
-$('lyricPlus').onclick=()=>command('lyricOffset',{value:(Number(state.lyricOffset)||0)+500});
+$('lyricMinus').onclick=()=>command('lyricOffset',{delta:-500});
+$('lyricPlus').onclick=()=>command('lyricOffset',{delta:500});
 $('lyricReset').onclick=()=>command('lyricOffset',{value:0});
 $('seek').addEventListener('pointerdown',()=>{seeking=true;});
 $('seek').addEventListener('pointerup',()=>{seeking=false;});
@@ -160,8 +169,8 @@ $('remoteShowSongs').onclick=()=>page('songs');
 $('remoteShowQueue').onclick=()=>page('queue');
 document.querySelectorAll('[data-rcommand]').forEach(b=>b.onclick=()=>command(b.dataset.rcommand));
 $('remoteLyricsFull').onclick=()=>{if($('remoteLyricStage').requestFullscreen)$('remoteLyricStage').requestFullscreen().catch(()=>notify('Fullscreen is unavailable.'));};
-$('remoteLyricMinus').onclick=()=>command('lyricOffset',{value:(Number(state.lyricOffset)||0)-500});
-$('remoteLyricPlus').onclick=()=>command('lyricOffset',{value:(Number(state.lyricOffset)||0)+500});
+$('remoteLyricMinus').onclick=()=>command('lyricOffset',{delta:-500});
+$('remoteLyricPlus').onclick=()=>command('lyricOffset',{delta:500});
 $('remoteLyricReset').onclick=()=>command('lyricOffset',{value:0});
 
 function time(ms){let n=Math.max(0,Math.floor(ms/1000));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');}
@@ -198,5 +207,5 @@ let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle
  const msg=s.notice||s.importStatus;if(msg&&msg!==lastNotice){lastNotice=msg;notify(msg);}
 }
 let pollDelay=host?1100:1450;
-async function poll(){try{if(!token){showPair();return;}state=await api('state');$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?1100:1450;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
+async function poll(){try{if(!token){showPair();return;}const epoch=stateEpoch,fresh=await api('state');if(pendingCommands||epoch!==stateEpoch)return;state=fresh;$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?1100:1450;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
 page(activePage);poll();
