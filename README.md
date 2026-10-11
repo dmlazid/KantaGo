@@ -21,6 +21,14 @@ The corrective change explicitly binds Gradle's debug signing configuration to t
 
 The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
 
+## Four-line karaoke stage and compact videoke control panel (v0.8.0)
+The main player now follows the common SongHub videoke layout more closely:
+- Four timed lyric lines at once, with **white upcoming text, strong black outlines, and blue highlighting** for the sung words
+- Full-width moving stage video above a compact KEY/TEM/MEL panel, playback transport, song-number entry, and 4×4 reservation keypad
+- Reserve, cancel, play first, reserve-list, and change-background actions remain functional
+- Uses original KantaGo video/track assets; it does not copy the SongHub logo, proprietary graphics, or commercial backing tracks
+- The paired-phone remote receives the same four-line caption data. KAR/MIDI lyric events have word-level timing, while simple line-timestamped LRC files use approximate word progress
+
 ## Readable karaoke lyrics in version 0.7.1
 Karaoke lyrics now display like a conventional videoke player: **white upcoming words and bright yellow sung words**, outlined dark over a translucent black caption strip near the bottom of the moving video. The next lyric line is large and legible. The animated footage stays visible above the captions, and the remote displays the same contrast. This intentionally uses solid text colors rather than Android WebView's unreliable text gradient clipping.
 

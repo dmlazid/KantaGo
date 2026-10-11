@@ -135,7 +135,14 @@ $('randomSong').onclick=()=>{const pool=filteredSongs();if(!pool.length){notify(
 $('clearFilters').onclick=()=>{$('search').value='';$('era').value='all';$('favorites').checked=false;$('fileType').value='all';language='All';document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('selected',b.dataset.lang==='All'));limit=60;renderSongs();};
 $('saveTag').onclick=async()=>{if(await command('tag',{id:tagId,language:$('tagLang').value,year:Number($('tagYear').value)||0}))$('tagDialog').close();};
 for(const k of ['1','2','3','4','5','6','7','8','9','CLR','0','⌫'])$('keypad').append(btn(k,()=>{let n=$('number');if(k==='CLR')n.value='';else if(k==='⌫')n.value=n.value.slice(0,-1);else n.value=(n.value+k).slice(0,6);}));$('number').oninput=()=>$('number').value=$('number').value.replace(/\D/g,'').slice(0,6);
-function numberAction(action){let n=$('number').value;if(!n){notify('Enter a song number first.');return;}command(action,{id:n.padStart(6,'0')});}$('reserve').onclick=()=>numberAction('reserve');$('playNow').onclick=()=>numberAction('play');$('mainCancel').onclick=()=>numberAction('cancelReservation');$('mainFirst').onclick=()=>numberAction('reserveFirst');document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>command(b.dataset.action));document.querySelectorAll('[data-adjust]').forEach(b=>b.onclick=()=>{let [k,v]=b.dataset.adjust.split(':');command(k,{delta:Number(v)});});$('volume').onchange=()=>command('volume',{value:Number($('volume').value)/100});$('shuffleQueue').onclick=()=>command('shuffleQueue');
+function numberAction(action){let n=$('number').value;if(!n){notify('Enter a song number first.');return;}command(action,{id:n.padStart(6,'0')});}$('quickMelody').onclick=()=>command('melody');
+$('clearNumber').onclick=()=>{$('number').value='';$('number').focus();};
+$('showReservations').onclick=()=>page('queue');
+$('cameraBackground').onclick=()=>{
+ if(host&&typeof Native!=='undefined'&&typeof Native.background==='function')Native.background();
+ else page('settings');
+};
+$('reserve').onclick=()=>numberAction('reserve');$('playNow').onclick=()=>numberAction('play');$('mainCancel').onclick=()=>numberAction('cancelReservation');$('mainFirst').onclick=()=>numberAction('reserveFirst');document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>command(b.dataset.action));document.querySelectorAll('[data-adjust]').forEach(b=>b.onclick=()=>{let [k,v]=b.dataset.adjust.split(':');command(k,{delta:Number(v)});});$('volume').onchange=()=>command('volume',{value:Number($('volume').value)/100});$('shuffleQueue').onclick=()=>command('shuffleQueue');
 $('clearQueue').onclick=()=>{if((state.queue||[]).length&&confirm('Clear all reserved songs?'))command('clearQueue');};
 $('lyricMinus').onclick=()=>command('lyricOffset',{delta:-500});
 $('lyricPlus').onclick=()=>command('lyricOffset',{delta:500});
@@ -189,6 +196,29 @@ $('remoteLyricReset').onclick=()=>command('lyricOffset',{value:0});
 
 function time(ms){let n=Math.max(0,Math.floor(ms/1000));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0');}
 let playingStage='',activeSceneClip='';
+function updateCaptionWindow(container,raw){
+ const captions=Array.isArray(raw)?raw:[];
+ if(!container.children.length){
+  for(let index=0;index<4;index++){
+   const row=document.createElement('div');row.className='captionRow';
+   const sung=document.createElement('span'),waiting=document.createElement('span');
+   sung.className='captionSung';waiting.className='captionWaiting';
+   row.append(sung,waiting);container.append(row);
+  }
+ }
+ for(let i=0;i<4;i++){
+  const row=container.children[i],caption=captions[i]||{};
+  const active=!!caption.active,spoken=active?(caption.sung||''):'',
+        upcoming=active?(caption.pending||''):(caption.text||'');
+  const signature=(active?'1':'0')+'|'+spoken+'|'+upcoming;
+  if(row.dataset.caption!==signature){
+   row.dataset.caption=signature;
+   row.classList.toggle('captionActive',active);
+   row.children[0].textContent=spoken;
+   row.children[1].textContent=upcoming;
+  }
+ }
+}
 function updateAnimatedKaraoke(s){
  const c=s.current,mode=$('stage').dataset.scene;
  const selected=mode==='auto'?((Number((c?.id||'0').slice(-2))%2)?'sunset':'disco'):mode;
@@ -207,6 +237,8 @@ function updateAnimatedKaraoke(s){
  // Do not use gradient-clipped text: Android WebView can render its letters
  // transparent or almost black against bright, moving stage videos.
  // Render two ordinary, high-contrast spans instead, highlighted per word.
+ updateCaptionWindow($('karaokeFourLines'),s.captions);
+ updateCaptionWindow($('remoteFourLines'),s.captions);
  const line=$('lyricFull');line.textContent='';
  const remoteLine=$('remoteLiveLyrics');
  const played=s.before||'',waiting=s.after||'';
