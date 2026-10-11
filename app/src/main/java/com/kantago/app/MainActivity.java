@@ -223,7 +223,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
  JSONObject find(String id)throws Exception{for(int i=0;i<songs.length();i++)if(songs.getJSONObject(i).getString("id").equals(id))return songs.getJSONObject(i);throw new Exception("Song number not found");}
  JSONObject state()throws Exception{double pos=score!=null?midi.position:media!=null?safePosition():0;double dur=score!=null?score.duration:media!=null?safeDuration():0;
   double lyricPos=Math.max(0,pos+lyricOffset),lyricProgress=-1;
-  StringBuilder before=new StringBuilder(),after=new StringBuilder();String next="",lyricFull="";
+  StringBuilder before=new StringBuilder(),after=new StringBuilder(),lyricFull=new StringBuilder();String next="";
   if(score!=null&&!score.lyrics.isEmpty()){
    List<MidiSong.Event> lyrics=score.lyrics;int start=0;for(int i=0;i<lyrics.size()&&lyrics.get(i).ms<=lyricPos;i++)if(newLine(lyrics.get(i).text))start=i;
    double lineEnd=dur;for(int i=start;i<lyrics.size();i++){
