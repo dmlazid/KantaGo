@@ -6,4 +6,8 @@ android {
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  buildTypes { release { minifyEnabled false } }
 }
-dependencies { implementation 'com.google.zxing:core:3.5.3' }
+dependencies {
+ implementation 'com.google.zxing:core:3.5.3'
+ implementation 'org.apache.commons:commons-compress:1.27.1'
+ implementation 'org.tukaani:xz:1.10'
+}

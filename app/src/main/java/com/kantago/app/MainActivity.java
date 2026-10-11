@@ -178,9 +178,20 @@ public class MainActivity extends Activity implements LocalServer.Api {
   if(req==14){Uri file=data.getData();if(file!=null)exportSongPack(file);return;}final String language=importLanguage,year=importYear;importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
  if(req==13){
   Uri uri=data.getData();
-  if(uri==null||!displayName(uri).toLowerCase(Locale.ROOT).endsWith(".zip"))throw new IOException("Select a .zip song pack");
-  importStatus="Reading ZIP pack…";
-  SongPack.Result extracted=SongPack.importZip(getContentResolver().openInputStream(uri),root,(entries,added,skipped)->importStatus="ZIP: "+entries+" entries, "+added+" songs, "+skipped+" skipped…");
+  String archiveName=uri==null?"":displayName(uri).toLowerCase(Locale.ROOT);
+  if(!archiveName.endsWith(".zip")&&!archiveName.endsWith(".7z"))throw new IOException("Select a ZIP or 7z karaoke pack");
+  SongPack.Result extracted;
+  if(archiveName.endsWith(".7z")){
+   File temporary=new File(getCacheDir(),"kantago-import-"+System.currentTimeMillis()+".7z");
+   try{
+    importStatus="Preparing 7z song pack…";
+    copy(getContentResolver().openInputStream(uri),temporary,SongPack.MAX_COMPRESSED_BYTES);
+    extracted=SevenZipPack.importSevenZ(temporary,root,(entries,added,skipped)->importStatus="7z: "+entries+" entries, "+added+" songs, "+skipped+" skipped…");
+   }finally{temporary.delete();}
+  }else{
+   importStatus="Reading ZIP song pack…";
+   extracted=SongPack.importZip(getContentResolver().openInputStream(uri),root,(entries,added,skipped)->importStatus="ZIP: "+entries+" entries, "+added+" songs, "+skipped+" skipped…");
+  }
   if(!extracted.files.isEmpty()){
    FutureTask<Integer> task=new FutureTask<>(()->{
     int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}
