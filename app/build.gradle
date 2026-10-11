@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'com.kantago.app'
  compileSdk 35
- defaultConfig { applicationId 'com.kantago.player'; minSdk 26; targetSdk 34; versionCode 3; versionName '0.5.3' }
+ defaultConfig { applicationId 'com.kantago.player'; minSdk 26; targetSdk 34; versionCode 4; versionName '0.6.0' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  // Explicitly use the same cached signing key checked by GitHub Actions.
  // Android Gradle Plugin defaults to $ANDROID_USER_HOME, which on GitHub runners
@@ -25,4 +25,13 @@ dependencies {
  implementation 'com.google.zxing:core:3.5.3'
  implementation 'org.apache.commons:commons-compress:1.27.1'
  implementation 'org.tukaani:xz:1.10'
+}
+
+/* Regenerate the copyright-safe offline music catalog on every local/CI build. */
+tasks.register('generateBuiltinKaraoke', Exec) {
+ workingDir rootProject.projectDir
+ commandLine 'python3','tools/build_builtin_library.py','--output','app/src/main/assets/builtin'
+}
+tasks.matching { it.name == 'preBuild' }.configureEach {
+ dependsOn tasks.named('generateBuiltinKaraoke')
 }

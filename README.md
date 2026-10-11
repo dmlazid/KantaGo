@@ -21,10 +21,19 @@ The corrective change explicitly binds Gradle's debug signing configuration to t
 
 The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
 
+## Built-in karaoke library in version 0.6.0
+KantaGo installs **48 playable, offline songs inside the APK** on first launch or when updating an existing library: 40 original KantaGo compositions (including English, Filipino/OPM-style, and Bisaya lyric tracks) plus eight traditional/public-domain melodies newly arranged for KantaGo. Every included song is a local MIDI/KAR track with timed lyrics; no extra pack, activation key, internet connection, or manual importing is needed.
+
+Traditional titles include **Twinkle Twinkle Little Star, Mary Had a Little Lamb, Frère Jacques, Row Row Row Your Boat, London Bridge, Ode to Joy, Jingle Bells, and Old MacDonald Had a Farm**. These are independent MIDI arrangements, not copyrighted commercial karaoke recordings.
+
+The songbook lists songs immediately and the home screen has ready-to-play favorites. **Existing personal imports are preserved by updates**, not silently deleted. To erase files imported into this installation, open **Settings → Delete imported music**, confirm the permanent deletion, and leave the 48 built-in songs untouched. This cannot erase files belonging to separately installed old KantaGo packages.
+
+The repository builds the karaoke library using `tools/build_builtin_library.py`; CI checks all 48 songs with the built-in MIDI parser and verifies that all files are actually present inside the published APK. No third-party commercial collections are redistributed.
+
 ## Download
 [**Download the newest test APK from Releases**](https://github.com/dmlazid/KantaGo/releases)
 
-Open the newest release and tap **KantaGo-0.5.3.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
+Open the newest release and tap **KantaGo-0.6.0.apk** under Assets. Android 8 or newer. Allow installation from your browser when prompted. This is an early test build, not a Play Store release. This APK is a **new, side-by-side installation**; it does not upgrade old incompatible installations. **Do not uninstall any older KantaGo versions**, since they may hold your song data. Import songs from their original media copies into the new app.
 
 ## First test
 1. Install the APK on your main Android device.
@@ -122,7 +131,7 @@ The activation code is a file passphrase. It does **not** confer copyright permi
 
 Validation: automated command-state regressions plus existing parser, pack and pairing tests. Physical-phone audio, QR camera and two-phone playback still need device verification.
 
-## 0.5.3 recording comparison
+## 0.6.0 recording comparison
 The supplied 47-second recording shows SongHub with 42,772 installed songs, a compact keypad and video backgrounds; KantaGo was showing original demos with controls below the viewport. This update keeps the host keypad beside playback controls, moves advanced mixer/background controls into Settings, increases lyric contrast and refreshes active host lyrics every 200 ms. Existing user-selected MP4 backgrounds remain supported; the recording itself is not bundled as an asset. This UI change does not supply the SongHub catalog or its instrument sounds.
 
 Source checks: Karaokeden returned HTTP 403; MidKar returned HTTP 406 for direct access; the Blogspot collection points to MediaFire downloads which returned an unavailable page here; FreeMIDIs initially returned HTML, then six Air Supply RAR archives downloaded successfully on retry; extraction confirmed MIDI backing tracks with no timed lyric events; MIDI-Song showed paid credits for a tested song; Scribd is a songbook PDF; Song Service is a music storefront. Those six source files were inspected locally and were not bundled or imported on a user device. No new lyric-ready karaoke collection is included. Browser layout checks passed at 393×800, 360×640 and 800×393, with the full keypad above navigation and no horizontal overflow.

@@ -9,7 +9,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
  File root,bg;QrCamera qrCamera;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
  AudioManager audio;AudioFocusRequest focus;String importLanguage="Other",importYear="",packActivationKey="";
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);root=new File(getFilesDir(),"songs");root.mkdirs();lyricOffset=getPreferences(0).getInt("lyricOffset",0);
-  try{File library=new File(getFilesDir(),"library.json");if(library.exists())songs=new JSONArray(read(library));if(songs.length()==0){File f=new File(root,"demo.mid");copy(getAssets().open("demo.mid"),f,1024*1024);songs.put(new JSONObject().put("id","000001").put("title","KantaGo Sound Check").put("artist","KantaGo original demo").put("language","English").put("year",2026).put("file",f.getName()).put("favorite",false));save();}
+  try{File library=new File(getFilesDir(),"library.json");if(library.exists())songs=new JSONArray(read(library));installBuiltinKaraoke();
    String bgName=getPreferences(0).getString("background","");if(!bgName.isEmpty()){File f=new File(getFilesDir(),bgName);if(f.exists()){bg=f;backgroundType=f.getName().endsWith("mp4")?"video":"image";}}
    try{
     JSONArray previousQueue=new JSONArray(getPreferences(0).getString("savedQueue","[]"));
@@ -32,6 +32,84 @@ public class MainActivity extends Activity implements LocalServer.Api {
    @Override public void onHideCustomView(){exitFullscreen();}
   });
   web.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !r.getUrl().toString().startsWith(base+"/");}});web.addJavascriptInterface(new Bridge(),"Native");setContentView(web);home();
+ }
+ String readAssetUtf8(String name,int limit)throws Exception{
+  try(InputStream in=getAssets().open(name);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+   byte[] buffer=new byte[8192];int n,total=0;
+   while((n=in.read(buffer))!=-1){
+    total+=n;if(total>limit)throw new IOException("Bundled catalog is too large");
+    out.write(buffer,0,n);
+   }
+   return out.toString("UTF-8");
+  }
+ }
+ /** Install offline karaoke songs already packaged inside this APK.
+  * Bundled song numbers 700001+ never collide with user-imported numbers.
+  * On upgrades preserve imported media and all existing favorites.
+  * Only the old shipped sound-check demo entry is retired automatically.
+  */
+ void installBuiltinKaraoke()throws Exception{
+  JSONArray included=new JSONArray(readAssetUtf8("builtin/catalog.json",2*1024*1024));
+  if(included.length()<40)throw new IOException("The bundled karaoke catalog is missing or incomplete");
+  Set<String> known=new HashSet<>();
+  for(int i=0;i<songs.length();i++)known.add(songs.getJSONObject(i).optString("id"));
+  boolean updated=false;
+  for(int i=0;i<included.length();i++){
+   JSONObject song=included.getJSONObject(i);
+   String id=song.getString("id"),filename=song.getString("file");
+   if(!filename.matches("kb-[0-9]{6}\\.kar"))throw new IOException("Invalid bundled song filename");
+   File target=new File(root,filename);
+   if(!target.isFile()||target.length()<100){
+    try(InputStream input=getAssets().open("builtin/"+filename)){copy(input,target,16L*1024*1024);}
+   }
+   if(!known.contains(id)){songs.put(song);known.add(id);updated=true;}
+  }
+  JSONArray kept=new JSONArray();
+  for(int i=0;i<songs.length();i++){
+   JSONObject song=songs.getJSONObject(i);
+   // Replace only KantaGo's shipped demo, not user's song files.
+   if(song.optString("id").equals("000001") &&
+      song.optString("title").equals("KantaGo Sound Check") &&
+      song.optString("file").equals("demo.mid")){
+    File oldDemo=new File(root,"demo.mid");
+    if(oldDemo.isFile())oldDemo.delete();
+    updated=true;
+    continue;
+   }
+   kept.put(song);
+  }
+  if(updated){songs=kept;save();revision++;}
+ }
+ /** Destructive clearing of imported media only; bundled music cannot be deleted. */
+ void confirmClearImported(){
+  new AlertDialog.Builder(this).setTitle("Delete imported music?")
+   .setMessage("This permanently deletes songs imported into THIS KantaGo app. The 48 included karaoke songs will remain. Back up any imported music you want to keep first.")
+   .setNegativeButton("Cancel",null)
+   .setPositiveButton("Delete imported music",(d,w)->{
+    try{
+     if(current!=null&&!current.optString("source").equals("builtin"))stop();
+     JSONArray kept=new JSONArray();Set<String> retained=new HashSet<>();
+     int removed=0,failed=0;
+     for(int i=0;i<songs.length();i++){
+      JSONObject song=songs.getJSONObject(i);
+      if(song.optString("source").equals("builtin")){
+       kept.put(song);retained.add(song.optString("id"));continue;
+      }
+      String filename=song.optString("file");
+      File file=new File(root,filename).getCanonicalFile();
+      if(!root.getCanonicalFile().equals(file.getParentFile()) || (file.exists()&&!file.delete())){
+       kept.put(song);retained.add(song.optString("id"));failed++;continue;
+      }
+      String basename=filename.replaceFirst("\\.[^.]+$","");
+      File lyric=new File(root,basename+".lrc");
+      if(root.getCanonicalFile().equals(lyric.getCanonicalFile().getParentFile()))lyric.delete();
+      removed++;
+     }
+     songs=kept;queue.removeIf(id->!retained.contains(id));saveQueue();save();revision++;
+     importStatus="Deleted "+removed+" imported songs. "+failed+" files could not be removed. Built-in karaoke songs remain available.";
+     toast(importStatus);
+    }catch(Exception e){toast("Could not clear imported songs: "+e.getMessage());}
+   }).show();
  }
  void exitFullscreen(){if(fullscreenView==null)return;((android.view.ViewGroup)fullscreenView.getParent()).removeView(fullscreenView);fullscreenView=null;web.setVisibility(View.VISIBLE);web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);WebChromeClient.CustomViewCallback callback=fullscreenCallback;fullscreenCallback=null;if(callback!=null)callback.onCustomViewHidden();}
  void home(){exitFullscreen();remote=false;web.removeJavascriptInterface("RemoteShell");web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
@@ -63,6 +141,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
   @JavascriptInterface public void connect(String address){ui.post(()->connectRemote(address));}
   @JavascriptInterface public void scanPair(){ui.post(()->openQrScanner());}
   @JavascriptInterface public String previousRemote(){return getPreferences(0).getString("lastRemoteAddress","");}
+  @JavascriptInterface public void clearImportedMusic(){ui.post(()->{if(!remote)confirmClearImported();});}
   @JavascriptInterface public void exportSongs(){ui.post(()->{
    if(remote)return;
    Intent pick=new Intent(Intent.ACTION_CREATE_DOCUMENT);

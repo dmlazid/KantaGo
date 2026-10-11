@@ -49,13 +49,6 @@ jobs:
         run: |
           bash tests/run.sh
           node --check app/src/main/assets/app.js
-      - name: Build and verify original starter collection
-        run: |
-          python3 -m pip install --disable-pip-version-check "cryptography>=44,<47"
-          python3 tools/create_original_demos.py --output "$RUNNER_TEMP/kantago-original-songs"
-          python3 tools/create_activated_pack.py --source "$RUNNER_TEMP/kantago-original-songs" --output KantaGo-Starter-Collection.kgpack --activation-key "KANTA-START-2026" --confirm-rights
-          javac -d /tmp/kantago-test app/src/main/java/com/kantago/app/MidiSong.java app/src/main/java/com/kantago/app/SongPack.java app/src/main/java/com/kantago/app/ActivatedPack.java tests/PackInteropTest.java
-          java -cp /tmp/kantago-test com.kantago.app.PackInteropTest KantaGo-Starter-Collection.kgpack
       - name: Build installable test APK
         run: gradle :app:assembleDebug :app:lintDebug --no-daemon
       - name: Verify signed APK certificate and compare historical builds
@@ -100,19 +93,28 @@ jobs:
             echo "::error::APK signing certificate mismatch found; build stopped. Update signing configuration before publishing."
             exit 1
           fi
+      - name: Verify built-in offline karaoke exists in finished APK
+        run: |
+          set -euo pipefail
+          FILE="app/build/outputs/apk/debug/app-debug.apk"
+          ASSETS="$(unzip -Z1 "$FILE")"
+          grep -q '^assets/builtin/catalog.json$' <<< "$ASSETS"
+          COUNT="$(grep -Ec '^assets/builtin/kb-[0-9]{6}\.kar$' <<< "$ASSETS")"
+          echo "APK includes $COUNT playable karaoke MIDI/KAR files"
+          test "$COUNT" -eq 48
       - name: Show KantaGo certificate identity
         run: |
           keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android             -alias androiddebugkey | grep -E "SHA256:" | head -1
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging             app/build/outputs/apk/debug/app-debug.apk | grep '^package:'
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.5.3-debug
+          name: KantaGo-0.6.0-debug
           path: app/build/outputs/apk/debug/app-debug.apk
-      - name: Publish APK and original starter song bundle
+      - name: Publish offline karaoke APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.5.3.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.6.0.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.5.3.apk KantaGo-Starter-Collection.kgpack --title "KantaGo 0.5.3 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "KantaGo 0.5.3 matches the compact videoke workflow from the supplied recording: stage, five transport buttons and full four-column keypad together; larger outlined lyrics and faster host lyric refresh. Background/mixer options moved to Settings. Same package and signing key as 0.5.1/0.5.2. No new commercial songs bundled; listed source downloads were blocked, paid or returned HTML. Optional original starter pack activation: KANTA-START-2026."
+          gh release create "$TAG" KantaGo-0.6.0.apk --title "KantaGo 0.6.0 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "ONE DOWNLOAD: KantaGo 0.6.0 already includes 48 ready-to-play offline MIDI karaoke songs with timed lyrics: 40 original compositions and 8 traditional melodies. No music download or activation is needed. Settings can delete user-imported music after confirmation, while always preserving built-in songs. Same package ID and pinned signing certificate as recent 0.5.x releases. No song packs or activation codes are needed. No third-party commercial recordings are bundled."

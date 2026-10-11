@@ -21,6 +21,7 @@ $('homeSongSearch').onclick=()=>{page('songs');$('search').focus();};
 $('homeArtistSearch').onclick=()=>{page('songs');$('sortSongs').value='artist';renderSongs();$('search').focus();};
 $('homeNewSongs').onclick=()=>{page('songs');$('sortSongs').value='recent';$('era').value='all';renderSongs();};
 $('homeMedia').onclick=()=>page('player');
+$('homeFavorites').onclick=()=>{$('favorites').checked=true;language='All';document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('selected',b.dataset.lang==='All'));page('songs');};
 document.querySelectorAll('[data-hub-lang]').forEach(b=>b.onclick=()=>{
  language=b.dataset.hubLang;
  document.querySelectorAll('[data-lang]').forEach(x=>x.classList.toggle('selected',x.dataset.lang===language));
@@ -37,10 +38,11 @@ $('remoteDisconnect').onclick=()=>{
  if(typeof RemoteShell!=='undefined')RemoteShell.disconnect();
  else{sessionStorage.removeItem('kantago-token');token='';showPair();}
 };
-function importDialog(){if(host)$('importDialog').showModal();else notify('Import songs on the main videoke device.');}['importHome','importSongs','importSettings'].forEach(id=>$(id).onclick=importDialog);
+function importDialog(){if(host)$('importDialog').showModal();else notify('Import songs on the main videoke device.');}['importSettings'].forEach(id=>{if($(id))$(id).onclick=importDialog;});
 function pick(folder){let year=$('importYear').value;if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}Native.importFiles($('importLang').value,year,folder);$('importDialog').close();}
 $('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);
 $('exportSongs').onclick=()=>{if(host)Native.exportSongs();else notify('Back up songs on the main KantaGo phone.');};
+$('deleteImported').onclick=()=>{if(host)Native.clearImportedMusic();else notify('This action is available only on the main KantaGo phone.');};
 $('pickActivated').onclick=()=>{
  if(!host){notify('Import song bundles on the main phone.');return;}
  const key=$('activationCode').value.trim(),year=$('importYear').value;
@@ -91,13 +93,25 @@ function filteredSongs(){
 function renderStats(){
  const owned=songs.length,counts={OPM:0,Bisaya:0,English:0,Other:0};
  songs.forEach(s=>{if(s.language in counts)counts[s.language]++;});
- $('libraryStats').textContent=owned+' songs available · '+counts.OPM+' OPM · '+counts.Bisaya+' Bisaya · '+counts.English+' English · '+counts.Other+' Foreign / Other';
+ const built=songs.filter(s=>s.source==='builtin').length;
+ $('libraryStats').textContent=built+' songs included offline · '+counts.OPM+' OPM · '+counts.Bisaya+' Bisaya · '+counts.English+' English · '+counts.Other+' Other'+(owned>built?' · '+(owned-built)+' personal imports':'');
+}
+function renderFeatured(){
+ const pane=$('homeFeatured');if(!pane)return;
+ pane.replaceChildren();
+ songs.filter(s=>s.source==='builtin').slice(0,8).forEach(s=>{
+  const item=el('button','featuredSong');
+  item.append(el('span','featuredNum',s.id),el('span','featuredName',s.title),el('span','featuredArrow','▶'));
+  item.setAttribute('aria-label','Play '+s.title);
+  item.onclick=()=>{command('play',{id:s.id});page('player');};
+  pane.append(item);
+ });
 }
 function renderSongs(){
  visibleSongs=filteredSongs();
  $('count').textContent=visibleSongs.length+' of '+songs.length+' songs';
  const list=$('songList');list.replaceChildren();
- if(!visibleSongs.length)list.append(el('div','empty',songs.length<=1?'Only the original demo is available. Import more songs on the main KantaGo device.':'No matching songs. Try clearing your filters.'));
+ if(!visibleSongs.length)list.append(el('div','empty','No matching songs. Clear the filters to see the included karaoke collection.'));
  visibleSongs.slice(0,limit).forEach(s=>{
   const row=el('div','song'),info=el('div','songInfo');
   info.append(el('div','songNumber',s.id+(s.format?' · '+s.format.toUpperCase():'')),el('div','songTitle',s.title),el('div','songMeta',s.artist+' · '+s.language+(s.year?' · '+s.year:'')));
@@ -207,5 +221,5 @@ let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle
  const msg=s.notice||s.importStatus;if(msg&&msg!==lastNotice){lastNotice=msg;notify(msg);}
 }
 let pollDelay=host?200:700;
-async function poll(){try{if(!token){showPair();return;}const epoch=stateEpoch,fresh=await api('state');if(pendingCommands||epoch!==stateEpoch)return;state=fresh;$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?(activePage==='player'?200:1100):700;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
+async function poll(){try{if(!token){showPair();return;}const epoch=stateEpoch,fresh=await api('state');if(pendingCommands||epoch!==stateEpoch)return;state=fresh;$('connection').textContent=host?'Offline ready':'Connected';$('connection').style.color='';offline=false;pollDelay=host?(activePage==='player'?200:1100):700;renderState();if(state.revision!==revision){songs=await api('songs');revision=state.revision;renderStats();renderFeatured();if(activePage==='songs')renderSongs();}}catch(e){$('connection').textContent='Disconnected';$('connection').style.color='#ff998f';if(!offline){offline=true;notify('Connection lost. Reconnecting automatically; keep the host phone awake and both phones on the same Wi-Fi.');}pollDelay=Math.min(7000,Math.round(pollDelay*1.45));}finally{setTimeout(poll,pollDelay);}}
 page(activePage);poll();
