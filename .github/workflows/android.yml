@@ -117,13 +117,13 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging             app/build/outputs/apk/debug/app-debug.apk | grep '^package:'
       - uses: actions/upload-artifact@v4
         with:
-          name: KantaGo-0.7.0-debug
+          name: KantaGo-0.7.1-debug
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Publish offline karaoke APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.7.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk KantaGo-0.7.1.apk
           TAG="test-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" KantaGo-0.7.0.apk --title "KantaGo 0.7.0 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "ONE DOWNLOAD: KantaGo 0.7.0 includes two silent, original animated dance-scene MP4 video loops, progressive highlighted karaoke lyric timing, the full song-selection remote controls, and 48 ready-to-play offline MIDI karaoke songs with timed lyrics: 40 original compositions and 8 traditional melodies. No music download or activation is needed. Settings can delete user-imported music after confirmation, while always preserving built-in songs. Same package ID and pinned signing certificate as recent 0.5.x releases. No song packs or activation codes are needed. No third-party commercial recordings are bundled."
+          gh release create "$TAG" KantaGo-0.7.1.apk --title "KantaGo 0.7.1 · Build ${GITHUB_RUN_NUMBER}" --prerelease --notes "ONE DOWNLOAD: KantaGo 0.7.1 includes two silent, original animated dance-scene MP4 video loops, clear white-and-gold word-by-word karaoke lyrics on a dark transparent caption strip, the full song-selection remote controls, and 48 ready-to-play offline MIDI karaoke songs with timed lyrics: 40 original compositions and 8 traditional melodies. No music download or activation is needed. Settings can delete user-imported music after confirmation, while always preserving built-in songs. Same package ID and pinned signing certificate as recent 0.5.x releases. No song packs or activation codes are needed. No third-party commercial recordings are bundled."

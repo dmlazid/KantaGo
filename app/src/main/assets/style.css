@@ -219,3 +219,128 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 .karaokeScreen .lyrics #lyricLine .karaokeWordLine{font-size:clamp(25px,7.8vw,42px);line-height:1.26}
 .karaokeScreen #stage:fullscreen #lyricLine .karaokeWordLine{font-size:clamp(34px,6vw,75px)}
 @media (orientation:landscape){.karaokeScreen #stage .lyrics{bottom:9%}}
+
+
+/* 0.7.1: SongHub-style readable two-line karaoke captions.
+   Android WebView sometimes paints background-clip:text as a very dark outline,
+   so use normal filled glyphs for both the played and upcoming words.
+   Keep video visible above the bottom caption scrim. */
+#stage .lyrics {
+ position:absolute;
+ inset:auto 7px 7%;
+ z-index:5;
+ display:flex;
+ flex-direction:column;
+ align-items:stretch;
+ justify-content:end;
+ gap:6px;
+ padding:18px 12px 17px;
+ max-height:52%;
+ box-sizing:border-box;
+ border-radius:13px;
+ background:linear-gradient(180deg,rgba(1,5,16,.32) 0%,rgba(1,5,16,.74) 15%,rgba(1,5,16,.88) 84%,rgba(1,5,16,.68) 100%);
+ opacity:1!important;
+ text-align:center;
+ pointer-events:none;
+}
+#stage .lyrics #nowTitle{display:none!important}
+#stage .lyrics #lyricLine{
+ display:block!important;
+ width:100%;
+ max-width:100%;
+ min-height:1.35em;
+ padding:0;
+ margin:0;
+ font-size:clamp(23px,5.8vw,39px);
+ line-height:1.23;
+ font-weight:900;
+ letter-spacing:.1px;
+ white-space:pre-wrap;
+ overflow-wrap:break-word;
+ text-align:center;
+ text-wrap:balance;
+}
+#stage .lyrics #lyricFull{display:none!important}
+#stage .lyrics #lyricBefore,
+#stage .lyrics #lyricAfter{
+ display:inline!important;
+ background:none!important;
+ background-image:none!important;
+ -webkit-background-clip:border-box!important;
+ background-clip:border-box!important;
+ filter:none!important;
+ -webkit-text-stroke:1.15px #030812!important;
+ text-shadow:2px 2px 0 #030812,-2px 2px 0 #030812,2px -2px 0 #030812,-2px -2px 0 #030812,0 3px 8px #000!important;
+}
+#stage .lyrics #lyricBefore{
+ color:#ffe654!important;
+ -webkit-text-fill-color:#ffe654!important;
+}
+#stage .lyrics #lyricAfter{
+ color:#ffffff!important;
+ -webkit-text-fill-color:#ffffff!important;
+}
+#stage .lyrics #nextLyric{
+ display:block;
+ margin:2px 0 0!important;
+ font-size:clamp(20px,5vw,32px)!important;
+ font-weight:850!important;
+ line-height:1.25!important;
+ color:#ffffff!important;
+ -webkit-text-fill-color:#ffffff!important;
+ -webkit-text-stroke:.8px #030812!important;
+ text-shadow:2px 2px 0 #030812,-2px 2px 0 #030812,0 3px 7px #000!important;
+ opacity:1!important;
+ white-space:pre-wrap;
+ overflow-wrap:break-word;
+ text-wrap:balance;
+}
+#stage .stageTop{z-index:6;text-shadow:0 1px 3px #000,0 2px 6px #000}
+#stage .stageTop #nowId{max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage .stageBottom{z-index:6;text-shadow:0 1px 3px #000}
+#stage:fullscreen .lyrics #lyricLine{font-size:clamp(30px,5.5vw,65px)}
+#stage:fullscreen .lyrics #nextLyric{font-size:clamp(28px,4.2vw,51px)!important}
+
+/* Readable captions also on the second phone's live remote stage. */
+.remoteStage .remoteLiveLyrics{
+ display:none;
+ --fill:initial;
+ position:relative;
+ z-index:4;
+ box-sizing:border-box;
+ width:calc(100% - 12px);
+ max-width:none;
+ margin:0 6px;
+ padding:12px 8px;
+ max-height:80%;
+ overflow-wrap:break-word;
+ white-space:pre-wrap;
+ background:rgba(1,5,16,.82)!important;
+ background-image:none!important;
+ border-radius:11px;
+ filter:none!important;
+ color:#ffffff!important;
+ -webkit-text-fill-color:#ffffff!important;
+ -webkit-text-stroke:0!important;
+ font-size:clamp(22px,6vw,36px);
+ font-weight:900;
+ line-height:1.25;
+ text-shadow:none!important;
+ text-align:center;
+}
+.remoteStage.isSinging .remoteLiveLyrics{display:block!important}
+.remoteStage .karaokeSung,
+.remoteStage .karaokeUpcoming{
+ -webkit-text-stroke:1.1px #030812!important;
+ text-shadow:2px 2px 0 #030812,-2px 2px 0 #030812,0 3px 7px #000!important;
+}
+.remoteStage .karaokeSung{color:#ffe654!important;-webkit-text-fill-color:#ffe654!important}
+.remoteStage .karaokeUpcoming{color:#fff!important;-webkit-text-fill-color:#fff!important}
+@media(max-width:420px){
+ #stage .lyrics{padding:12px 8px 13px;gap:4px;inset:auto 5px 7%}
+ #stage .lyrics #lyricLine{font-size:clamp(21px,6vw,34px)}
+ #stage .lyrics #nextLyric{font-size:clamp(18px,5.3vw,27px)!important}
+}
+@media (prefers-reduced-motion:reduce){
+ #stage .lyrics *,.remoteStage .remoteLiveLyrics *{animation:none!important}
+}
