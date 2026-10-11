@@ -204,15 +204,24 @@ function updateAnimatedKaraoke(s){
   if(s.playing){if(scene.paused)scene.play().catch(()=>{});}
   else if(!scene.paused)scene.pause();
  }
- const percent=Math.round(Math.max(0,Math.min(1,Number(s.lyricProgress)||0))*100);
- const full=s.lyricFull||(s.before||'')+(s.after||'');
- const line=$('lyricFull'),remoteLine=$('remoteLiveLyrics');
- line.textContent=full;line.style.setProperty('--fill',percent+'%');
- remoteLine.textContent=full;remoteLine.style.setProperty('--fill',percent+'%');
+ // Do not use gradient-clipped text: Android WebView can render its letters
+ // transparent or almost black against bright, moving stage videos.
+ // Render two ordinary, high-contrast spans instead, highlighted per word.
+ const line=$('lyricFull');line.textContent='';
+ const remoteLine=$('remoteLiveLyrics');
+ const played=s.before||'',waiting=s.after||'';
+ const newKey=played+'\u0001'+waiting;
+ if(remoteLine.dataset.lyricKey!==newKey){
+  remoteLine.dataset.lyricKey=newKey;
+  const finished=document.createElement('span'),upcoming=document.createElement('span');
+  finished.className='karaokeSung';finished.textContent=played;
+  upcoming.className='karaokeUpcoming';upcoming.textContent=waiting;
+  remoteLine.replaceChildren(finished,upcoming);
+ }
 }
-let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle').textContent=s.playing?'Ⅱ':'▶';$('nowTitle').textContent=c?c.title:'Select a song';$('nowId').textContent=c?c.id+' · '+c.artist:'READY TO SING';$('clock').textContent=time(s.position||0)+' / '+time(s.duration||0);$('progress').value=s.duration?s.position/s.duration:0;$('lyricBefore').textContent=s.before||'';$('lyricAfter').textContent=s.after||'';updateAnimatedKaraoke(s);$('nextLyric').textContent=s.nextLyric||(s.loading?'Preparing audio…':c&&!s.before&&!s.after?'Instrumental · no timed lyrics in this file':'');$('keyValue').textContent=(s.key>0?'+':'')+s.key;$('tempoValue').textContent=Math.round(s.tempo*100)+'%';if(document.activeElement!==$('volume'))$('volume').value=Math.round(s.volume*100);$('melody').textContent='Melody channel 1: '+(s.melody?'on':'off');$('lyricOffsetValue').textContent=((Number(s.lyricOffset)||0)/1000).toFixed(1)+'s';
+let queueSignature='';function renderState(){const s=state,c=s.current;$('toggle').textContent=s.playing?'Ⅱ':'▶';$('nowTitle').textContent=c?c.title:'Select a song';$('nowId').textContent=c?c.id+' · '+c.title+' · '+c.artist:'READY TO SING';$('clock').textContent=time(s.position||0)+' / '+time(s.duration||0);$('progress').value=s.duration?s.position/s.duration:0;$('lyricBefore').textContent=s.before||'';$('lyricAfter').textContent=s.after||'';updateAnimatedKaraoke(s);$('nextLyric').textContent=s.nextLyric||(s.loading?'Preparing audio…':c&&!s.before&&!s.after?'Instrumental · no timed lyrics in this file':'');$('keyValue').textContent=(s.key>0?'+':'')+s.key;$('tempoValue').textContent=Math.round(s.tempo*100)+'%';if(document.activeElement!==$('volume'))$('volume').value=Math.round(s.volume*100);$('melody').textContent='Melody channel 1: '+(s.melody?'on':'off');$('lyricOffsetValue').textContent=((Number(s.lyricOffset)||0)/1000).toFixed(1)+'s';
  const seek=$('seek');seek.disabled=!s.seekable;seek.max=Math.max(1,Math.round(s.duration||1));if(!seeking)seek.value=Math.min(Number(seek.max),Math.round(s.position||0));$('seekHint').textContent=s.seekable?'Drag to seek in this audio/video song':'Seeking available for audio/video songs';
- $('lyricBefore').classList.toggle('lineFill',Number(s.lyricProgress)>=0);$('lyricBefore').style.setProperty('--filled',Math.round(Math.max(0,Math.min(1,Number(s.lyricProgress)||0))*100)+'%');$('upNext').textContent=s.queue?.length?'Next: '+s.queue[0].title:'No reservations yet';
+ $('lyricBefore').classList.remove('lineFill');$('lyricBefore').style.removeProperty('--filled');$('upNext').textContent=s.queue?.length?'Next: '+s.queue[0].title:'No reservations yet';
  $('stageIdle').classList.toggle('hidden',!!c);
  $('stage').classList.toggle('isSinging',!!c&&!!s.playing);
  $('miniKey').textContent=(s.key>0?'+':'')+s.key;

@@ -21,6 +21,11 @@ The corrective change explicitly binds Gradle's debug signing configuration to t
 
 The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
 
+## Readable karaoke lyrics in version 0.7.1
+Karaoke lyrics now display like a conventional videoke player: **white upcoming words and bright yellow sung words**, outlined dark over a translucent black caption strip near the bottom of the moving video. The next lyric line is large and legible. The animated footage stays visible above the captions, and the remote displays the same contrast. This intentionally uses solid text colors rather than Android WebView's unreliable text gradient clipping.
+
+The original SongHub brand, assets, and proprietary videos are not included; KantaGo independently follows the familiar high-contrast karaoke presentation.
+
 ## Animated karaoke stage in version 0.7.0
 KantaGo now includes two **original moving video backgrounds** bundled into its APK: neon dance room and rooftop sunset, both showing an animated geometric dancer. The graphics are procedural creations, not copied clips from SongHub or commercial karaoke videos. Choose Auto, Neon dance, or Sunset stage in Settings. The videos are silent; MIDI/MP3 media supplies the audio. A user's own MP4 karaoke song or custom background always takes priority.
 
