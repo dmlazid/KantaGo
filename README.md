@@ -21,6 +21,13 @@ The corrective change explicitly binds Gradle's debug signing configuration to t
 
 The pinned debug key currently survives through GitHub Actions caching, which is not durable or suitable for production app updates. Before broad distribution, migrate the same private key into encrypted GitHub Actions secrets / secure keystore storage, and keep the expected signer fingerprint unchanged.
 
+## Animated karaoke stage in version 0.7.0
+KantaGo now includes two **original moving video backgrounds** bundled into its APK: neon dance room and rooftop sunset, both showing an animated geometric dancer. The graphics are procedural creations, not copied clips from SongHub or commercial karaoke videos. Choose Auto, Neon dance, or Sunset stage in Settings. The videos are silent; MIDI/MP3 media supplies the audio. A user's own MP4 karaoke song or custom background always takes priority.
+
+The karaoke line appears near the bottom of the moving video, with a gradual cyan-blue highlight and the next line beneath it. Bundled KAR files now include word-level lyric events. Existing MIDI files and external LRC tracks remain supported; accuracy depends on the timing metadata in each song. The compact stage and numeric remote controls remain accessible underneath.
+
+These are lightweight stylized geometric animations, **not photorealistic 3D music videos**. Original 3D model cinematics, microphone scoring, real vocalist removal and full professional SoundFont samples are not included in this version.
+
 ## Built-in karaoke library in version 0.6.0
 KantaGo installs **48 playable, offline songs inside the APK** on first launch or when updating an existing library: 40 original KantaGo compositions (including English, Filipino/OPM-style, and Bisaya lyric tracks) plus eight traditional/public-domain melodies newly arranged for KantaGo. Every included song is a local MIDI/KAR track with timed lyrics; no extra pack, activation key, internet connection, or manual importing is needed.
 

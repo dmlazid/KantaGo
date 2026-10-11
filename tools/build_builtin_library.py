@@ -105,8 +105,12 @@ def classic_midi(name,seq,lines,tempo=108):
     event(t+ticks*3-28,1,bytes([0x82,root-12,0]))
   for j,line in enumerate(lines):
    at=offset+min(j*(len(notes)//len(lines)),len(notes)-1)*ticks
-   words=('/'+line).encode('utf-8')
-   event(at,0,b'\xff\x05'+vlq(len(words))+words)
+   words=line.split()
+   line_ticks=max(ticks, (len(notes)//len(lines))*ticks)
+   for wi,word in enumerate(words):
+    part=(('/' if wi==0 else '')+word+(' ' if wi<len(words)-1 else '')).encode('utf-8')
+    lyric_at=at+int(wi*line_ticks/max(1,len(words)))
+    event(lyric_at,0,b'\xff\x05'+vlq(len(part))+part)
  end=3*len(notes)*ticks
  event(end,9,b'\xff\x2f\x00')
  events.sort(key=lambda x:(x[0],x[1]))
