@@ -6,7 +6,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
  WebView web;LocalServer server;final Handler ui=new Handler(Looper.getMainLooper());final ExecutorService io=Executors.newSingleThreadExecutor();final MidiEngine midi=new MidiEngine();
  JSONArray songs=new JSONArray();final ArrayList<String> queue=new ArrayList<>();JSONObject current;MediaPlayer media;MidiSong score;final List<double[]> lrcTimes=new ArrayList<>();final List<String> lrcText=new ArrayList<>();
  File root,bg;QrCamera qrCamera;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
- AudioManager audio;AudioFocusRequest focus;String importLanguage="Other",importYear="";
+ AudioManager audio;AudioFocusRequest focus;String importLanguage="Other",importYear="",packActivationKey="";
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);root=new File(getFilesDir(),"songs");root.mkdirs();lyricOffset=getPreferences(0).getInt("lyricOffset",0);
   try{File library=new File(getFilesDir(),"library.json");if(library.exists())songs=new JSONArray(read(library));if(songs.length()==0){File f=new File(root,"demo.mid");copy(getAssets().open("demo.mid"),f,1024*1024);songs.put(new JSONObject().put("id","000001").put("title","KantaGo Sound Check").put("artist","KantaGo original demo").put("language","English").put("year",2026).put("file",f.getName()).put("favorite",false));save();}
    String bgName=getPreferences(0).getString("background","");if(!bgName.isEmpty()){File f=new File(getFilesDir(),bgName);if(f.exists()){bg=f;backgroundType=f.getName().endsWith("mp4")?"video":"image";}}
@@ -29,6 +29,18 @@ public class MainActivity extends Activity implements LocalServer.Api {
  }
  class Bridge {
   @JavascriptInterface public void importFiles(String lang,String year,boolean folder){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent i=new Intent(folder?Intent.ACTION_OPEN_DOCUMENT_TREE:Intent.ACTION_OPEN_DOCUMENT);if(!folder){i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addCategory(Intent.CATEGORY_OPENABLE);}startActivityForResult(i,folder?11:10);});}
+  @JavascriptInterface public void importActivatedPack(String key,String lang,String year){
+   if(key==null||key.trim().length()<8||key.trim().length()>256){ui.post(()->toast("Enter your song pack activation key"));return;}
+   ui.post(()->{
+    if(remote)return;
+    packActivationKey=key.trim();
+    importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";
+    importYear=year;
+    Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+    intent.setType("*/*");intent.addCategory(Intent.CATEGORY_OPENABLE);
+    startActivityForResult(intent,15);
+   });
+  }
   @JavascriptInterface public void importZip(String lang,String year){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.setType("*/*");intent.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(intent,13);});}
   @JavascriptInterface public void background(){ui.post(()->{if(remote)return;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/jpeg","image/png","video/mp4"});startActivityForResult(i,12);});}
   @JavascriptInterface public void pairing(){ui.post(()->showPairing());}
@@ -160,7 +172,25 @@ public class MainActivity extends Activity implements LocalServer.Api {
  @Override public File background(){return bg;}
  @Override public File mediaFile(){try{return current==null?null:new File(root,current.getString("file"));}catch(Exception e){return null;}}
  @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null)return;
-  if(req==14){Uri file=data.getData();if(file!=null)exportSongPack(file);return;}final String language=importLanguage,year=importYear;importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
+  if(req==14){Uri file=data.getData();if(file!=null)exportSongPack(file);return;}
+  final String language=importLanguage,year=importYear;
+  final String activation=packActivationKey;packActivationKey="";importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
+ if(req==15){
+  Uri uri=data.getData();
+  if(uri==null||!displayName(uri).toLowerCase(Locale.ROOT).endsWith(".kgpack"))throw new IOException("Select a .kgpack song bundle downloaded from KantaGo");
+  importStatus="Checking activation key and pack integrity…";
+  File verified=ActivatedPack.decrypt(getContentResolver().openInputStream(uri),getCacheDir(),activation.toCharArray(),
+   (done,total)->importStatus="Unlocking songs: "+(100*done/Math.max(1,total))+"%…");
+  try{
+   SongPack.Result pack;
+   try(FileInputStream zip=new FileInputStream(verified)){
+    pack=SongPack.importZip(zip,root,(entries,count,skipped)->importStatus="Adding karaoke songs: "+count+"…");
+   }
+   registerPackSongs(pack,language,year);
+   importStatus="Activated pack imported: "+pack.files.size()+" new karaoke songs, "+pack.lyricFiles+" lyric files; "+pack.skipped+" skipped.";
+  }finally{verified.delete();}
+  return;
+ }
  if(req==13){
   Uri uri=data.getData();
   String archiveName=uri==null?"":displayName(uri).toLowerCase(Locale.ROOT);
@@ -177,25 +207,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
    importStatus="Reading ZIP song pack…";
    extracted=SongPack.importZip(getContentResolver().openInputStream(uri),root,(entries,added,skipped)->importStatus="ZIP: "+entries+" entries, "+added+" songs, "+skipped+" skipped…");
   }
-  if(!extracted.files.isEmpty()){
-   FutureTask<Integer> task=new FutureTask<>(()->{
-    int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}
-    int releaseYear=y>=1900&&y<=2100?y:0;
-    JSONArray updated=new JSONArray(songs.toString());
-    for(String filename:extracted.files){
-     String label=filename.substring(0,filename.lastIndexOf('.'));
-     String[] parts=label.split(" - ",2);
-     String artist=parts.length>1?parts[0]:"Unknown artist";
-     String title=parts.length>1?parts[1]:label;
-     String songId=String.format(Locale.US,"%06d",updated.length()+1);
-     updated.put(new JSONObject().put("id",songId).put("title",title).put("artist",artist).put("language",language).put("year",releaseYear).put("file",filename).put("favorite",false));
-    }
-    JSONArray prior=songs;songs=updated;
-    try{save();}catch(Exception err){songs=prior;throw err;}
-    revision++;return extracted.files.size();
-   });
-   ui.post(task);task.get(30,TimeUnit.SECONDS);
-  }
+  registerPackSongs(extracted,language,year);
   importStatus="ZIP complete: "+extracted.files.size()+" songs, "+extracted.lyricFiles+" lyrics; "+extracted.skipped+" skipped.";
   return;
  }
@@ -203,6 +215,30 @@ public class MainActivity extends Activity implements LocalServer.Api {
  int added=0,skipped=0;for(Uri u:files){String name=displayName(u).replaceAll("[^\\p{L}\\p{N} ._()-]","_");String ext=name.substring(Math.max(0,name.lastIndexOf('.')+1)).toLowerCase(Locale.ROOT);if(!Arrays.asList("mid","kar","mp3","mp4","wav","ogg","m4a","lrc").contains(ext)){skipped++;continue;}String normalized=name.substring(0,name.length()-ext.length())+ext;File dest=new File(root,normalized);if(dest.exists()){skipped++;continue;}try{copy(getContentResolver().openInputStream(u),dest,ext.equals("mid")||ext.equals("kar")?16L*1024*1024:500L*1024*1024);if(!ext.equals("lrc")){String title=name.replaceFirst("\\.[^.]+$","");String[] parts=title.split(" - ",2);final String artist=parts.length>1?parts[0]:"Unknown artist",songTitle=parts.length>1?parts[1]:title;FutureTask<Void> task=new FutureTask<>(()->{String id=String.format(Locale.US,"%06d",songs.length()+1);int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}songs.put(new JSONObject().put("id",id).put("title",songTitle).put("artist",artist).put("language",language).put("year",y>=1900&&y<=2100?y:0).put("file",normalized).put("favorite",false));save();revision++;return null;});ui.post(task);task.get(10,TimeUnit.SECONDS);added++;}}catch(Exception e){dest.delete();skipped++;}importStatus="Imported "+added+" songs…";}
  importStatus="Import complete: "+added+" songs; "+skipped+" skipped (duplicates or unsupported files).";
  }catch(Exception e){importStatus="Import failed: "+e.getMessage();}});}
+ void registerPackSongs(SongPack.Result extracted,String language,String year)throws Exception{
+  if(extracted.files.isEmpty())return;
+  FutureTask<Integer> task=new FutureTask<>(()->{
+   int y=0;try{y=Integer.parseInt(year);}catch(Exception ignored){}
+   int releaseYear=y>=1900&&y<=2100?y:0;
+   JSONArray updated=new JSONArray(songs.toString());
+   for(String filename:extracted.files){
+    String label=filename.substring(0,filename.lastIndexOf('.'));
+    String[] parts=label.split(" - ",2);
+    String artist=parts.length>1?parts[0]:"Unknown artist";
+    String title=parts.length>1?parts[1]:label;
+    String id=String.format(Locale.US,"%06d",updated.length()+1);
+    updated.put(new JSONObject().put("id",id).put("title",title).put("artist",artist)
+      .put("language",language).put("year",releaseYear).put("file",filename).put("favorite",false));
+   }
+   JSONArray before=songs;
+   songs=updated;
+   try{save();}catch(Exception e){songs=before;throw e;}
+   revision++;
+   return extracted.files.size();
+  });
+  ui.post(task);
+  task.get(45,TimeUnit.SECONDS);
+ }
  void walk(Uri tree,String id,List<Uri> result,int depth)throws Exception{if(depth>12||result.size()>20000)throw new Exception("Folder too large; import smaller folders");Uri children=DocumentsContract.buildChildDocumentsUriUsingTree(tree,id);try(Cursor c=getContentResolver().query(children,new String[]{DocumentsContract.Document.COLUMN_DOCUMENT_ID,DocumentsContract.Document.COLUMN_MIME_TYPE},null,null,null)){if(c==null)return;while(c.moveToNext()){String child=c.getString(0);if(DocumentsContract.Document.MIME_TYPE_DIR.equals(c.getString(1)))walk(tree,child,result,depth+1);else{result.add(DocumentsContract.buildDocumentUriUsingTree(tree,child));if(result.size()>20000)throw new Exception("Import smaller folders");}}}}
  String displayName(Uri u){try(Cursor c=getContentResolver().query(u,new String[]{OpenableColumns.DISPLAY_NAME},null,null,null)){if(c!=null&&c.moveToFirst())return c.getString(0);}return "song.mid";}
  static void copy(InputStream in,File f,long max)throws Exception{if(in==null)throw new IOException("Cannot read selected file");File tmp=new File(f.getPath()+".part");try(InputStream s=in;OutputStream out=new FileOutputStream(tmp)){byte[] b=new byte[32768];int n;long size=0;while((n=s.read(b))!=-1){size+=n;if(size>max)throw new IOException("File too large");out.write(b,0,n);}}catch(Exception e){tmp.delete();throw e;}if(!tmp.renameTo(f))throw new IOException("Cannot save imported file");}
