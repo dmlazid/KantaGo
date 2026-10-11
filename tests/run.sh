@@ -15,3 +15,4 @@ java -cp /tmp/kantago-test com.kantago.app.BuiltinLibraryTest app/src/main/asset
 node --check app/src/main/assets/app.js
 
 node tests/ui-state.cjs
+node tests/lyric-contrast.cjs
