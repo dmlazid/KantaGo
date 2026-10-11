@@ -67,3 +67,89 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 .sourceTiles button{min-width:0;min-height:70px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:6px;padding:13px 12px;background:#152c39;border:1px solid #306068;border-radius:13px}
 .sourceTiles b{font-size:13px;color:#a7f6ee}.sourceTiles small{font-size:11px;color:#b1c9d1;line-height:1.4}
 @media(max-width:350px){.sourceTiles{grid-template-columns:1fr}}
+
+/* KantaGo 0.4 — karaoke-first interface, visually inspired by common videoke controls */
+.hubGreeting{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.hubGreeting h1{font-size:clamp(29px,6vw,44px);line-height:1.13;margin:10px 0 6px}
+.hubMic{font-size:45px;width:75px;height:75px;border-radius:24px;background:linear-gradient(140deg,#24525b,#151d39);display:grid;place-items:center;flex-shrink:0}
+.hubEnter{width:100%;min-height:158px;background:radial-gradient(circle at 14% 25%,#ed73aa66,transparent 35%),linear-gradient(115deg,#81365b,#a04a8b,#40215f);border:1px solid #ed8cb7;border-radius:22px;display:flex;align-items:center;gap:22px;padding:25px;text-align:left;box-shadow:0 18px 45px #04051555}
+.hubEnterIcon{font-size:68px;color:#fff;line-height:1}
+.hubEnter b{font-size:25px;display:block}.hubEnter small{font-size:12px;display:block;margin-top:9px}.hubArrow{font-size:28px;margin-left:auto}
+.hubGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.hubTile{min-width:0;min-height:116px;text-align:left;display:flex;flex-direction:column;justify-content:end;padding:14px 16px;gap:6px;border-radius:17px}
+.hubTile b{font-size:15px}.hubTile small{font-size:11px;opacity:.85}.tileSymbol{font-size:29px;margin-bottom:auto}
+.tileSearch{background:linear-gradient(140deg,#2d65ad,#173662)}.tileArtist{background:linear-gradient(140deg,#d29a37,#856226)}
+.tileNew{background:linear-gradient(140deg,#2c946d,#195044)}.tileMedia{background:linear-gradient(140deg,#673aa3,#31295d)}
+.tileRemote{background:linear-gradient(140deg,#166a7b,#183c58)}.tileImport{background:linear-gradient(140deg,#b65d47,#633d47)}
+.hubLibrary{margin:20px 0}.hubLibrary .sectionTitle h2{font-size:19px;margin:0}.hubLibrary .libraryStats{margin:12px 0}
+.hubQuick{display:flex;gap:6px;overflow-x:auto}.hubQuick button{white-space:nowrap;min-height:38px;padding:8px 12px;font-size:12px}
+.hubInfo{font-size:12px;color:var(--muted)}
+/* animated karaoke stage; the user's photo, video or MP4 track still takes priority */
+.stage{height:min(49vh,470px);min-height:335px;border-radius:18px;background:#142b58}
+.stageFX{position:absolute;inset:0;z-index:-2;overflow:hidden;isolation:isolate;background:radial-gradient(circle at 20% 32%,#613aab,#192556 62%,#080e2e)}
+.stageFX>div{position:absolute;pointer-events:none}
+.stageBeam{width:46vw;max-width:310px;height:160%;top:-35%;filter:blur(2px);opacity:.38;transform-origin:top center;background:linear-gradient(180deg,#ffed82ae,transparent 62%);clip-path:polygon(45% 0,55% 0,100% 100%,0 100%);animation:beamSwing 9s ease-in-out infinite alternate}
+.stageBeam.beamOne{left:10%}.stageBeam.beamTwo{right:3%;background:linear-gradient(#5ce7f5b5,transparent 65%);animation-delay:-4s}
+.stageOrbit{width:340px;height:340px;border:16px dotted #fb75d9a0;border-radius:50%;top:20%;left:calc(50% - 170px);box-shadow:0 0 60px #fa73d020;animation:spinOrbit 24s linear infinite}
+.stageOrbit.orbitTwo{width:260px;height:260px;left:calc(50% - 130px);top:31%;border:10px dashed #6cffee;animation-direction:reverse;animation-duration:16s}
+.stageSun{width:65%;height:90%;border-radius:50%;top:30%;left:18%;background:radial-gradient(ellipse,#ffd87d67,transparent 64%);filter:blur(22px);animation:slowPulse 8s ease-in-out infinite}
+.stageGrid{height:55%;width:140%;bottom:-20%;left:-20%;transform:perspective(300px) rotateX(58deg);background:repeating-linear-gradient(90deg,transparent 0 47px,#69e8f36b 49px 51px),repeating-linear-gradient(0deg,transparent 0 30px,#69e8f36b 31px 33px)}
+.stage[data-scene=neon] .stageFX{background:radial-gradient(circle at 50% 50%,#116a7f,#050e28 75%)}
+.stage[data-scene=neon] .stageOrbit{border-style:solid;border-color:#31f3d1;box-shadow:0 0 30px #00ddb580,inset 0 0 30px #00ddb570}
+.stage[data-scene=retro] .stageFX{background:linear-gradient(#d44780,#653169 58%,#161d4a)}
+.stage[data-scene=retro] .stageSun{background:linear-gradient(#ffcf6e,#f77d75);filter:none;opacity:.8;height:220px;width:220px;top:18%;left:calc(50% - 110px)}
+.stage[data-scene=spotlight] .stageFX{background:radial-gradient(ellipse at 50% 100%,#354767,#0c132b 72%)}
+.stage[data-scene=spotlight] .stageOrbit{opacity:.12}
+.stageTop{z-index:2}.stageBottom{z-index:2}.stage .lyrics{z-index:1}
+.stageIdle{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;text-shadow:0 2px 8px #000;pointer-events:none}
+.stageIdle span{font-weight:800;font-size:21px;letter-spacing:1px}
+.stageIdle strong{font-size:clamp(40px,12vw,80px);font-variant-numeric:tabular-nums;color:#ffcf6a;text-shadow:0 0 8px #9a5007}
+.stageIdle small{color:#eff4fb;text-align:center}
+.stage:not(.isSinging) .lyrics{opacity:.65}.stage:not(.isSinging) .lyrics h2{opacity:.1}
+.stage:not(.isSinging) .stageBeam{animation-play-state:paused}
+.stage.isSinging .stageFX{filter:saturate(1.15)}
+.stage:has(#songVideo:not(.hidden)) .stageFX,.stage:has(#bgImage:not(.hidden)) .stageFX,.stage:has(#bgVideo:not(.hidden)) .stageFX{display:none}
+.stage:has(#songVideo:not(.hidden)) .stageIdle,.stage:has(#bgVideo:not(.hidden)) .stageIdle{z-index:1}
+.sceneToolbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0}
+.sceneToolbar span{color:#bed8de;font-size:11px}.sceneTabs{display:flex;gap:5px;overflow-x:auto}
+.sceneTabs button{min-height:33px;border-radius:10px;padding:5px 9px;font-size:10px;white-space:nowrap}
+.sceneTabs button.selected{color:#052d2b;background:#51d9cd}
+.playerMixer{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.playerMixer span{padding:9px 4px;text-align:center;border-radius:10px;font-size:10px;background:#144551}
+.playerMixer b{color:#8cffec}.transport{gap:7px;margin:7px 0}.transport button{min-height:47px;max-width:none}
+.actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.actions button{font-size:12px;padding:7px 4px;min-height:52px}
+.cancelButton{background:linear-gradient(#c95360,#712132)}.firstButton{background:linear-gradient(#3784d3,#164c88)}
+/* Videoke handset-style remote: stage, mixer, five transport keys, numeric pad & RES/CAN/1st */
+.remote main{padding:8px 12px 100px}
+.remoteHero{display:flex;align-items:center;justify-content:space-between;background:#15283d;border:1px solid #2b5260;border-radius:12px;padding:7px 9px;margin:2px 0 7px}
+.remoteSignal{display:flex;gap:8px;align-items:center;min-width:0}.remoteSignal>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.remoteSignal b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.remoteSignal small{font-size:10px;color:#a3bfd1}
+.remoteStage{height:clamp(160px,27vh,310px);border:2px solid #33676f;position:relative;overflow:hidden;border-radius:13px;background:linear-gradient(125deg,#4d2386,#1c357b 48%,#0f837d);display:flex;justify-content:center;align-items:center;flex-direction:column;gap:2px;text-shadow:0 1px 5px #000}
+.remoteStage:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 65%,#fbb96877,transparent 60%);animation:slowPulse 5s ease-in-out infinite}
+.remoteStage>span,.remoteStage>strong,.remoteStage>small{z-index:1}.remoteStage>span{font-size:18px;font-weight:800}
+.remoteStage>strong{font-size:clamp(40px,11vw,62px);color:#ffda6b;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.remoteStage>small{font-size:10px;max-width:90%;text-align:center}
+.remoteScenery{position:absolute;inset:0;opacity:.5}
+.remoteScenery i{position:absolute;width:45%;height:130%;left:4%;top:-25%;background:linear-gradient(#f7b7f0c9,transparent 65%);clip-path:polygon(40% 0,60% 0,100% 100%,0 100%);animation:beamSwing 6s ease-in-out infinite alternate}
+.remoteScenery i:nth-child(2){left:55%;background:linear-gradient(#b8ffec,transparent 70%);animation-delay:-2s}
+.remoteScenery i:nth-child(3){width:170px;height:170px;left:calc(50% - 85px);top:30%;border-radius:50%;border:12px dotted #fdef93;background:none;animation:spinOrbit 15s linear infinite}
+.remoteMixer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:5px 0}
+.remoteMixer>div{min-width:0;display:grid;grid-template-columns:27px 1fr 27px;grid-template-rows:14px 24px;align-items:center;gap:1px;background:linear-gradient(#236b73,#163f5f);padding:3px;border-radius:6px}
+.remoteMixer span{grid-column:1/4;font-size:9px;line-height:12px;letter-spacing:1px;text-align:center}
+.remoteMixer b{font-size:10px;text-align:center;white-space:nowrap}
+.remoteMixer button{min-height:24px;padding:0;border:0;background:transparent;color:#a7f7fa;font-size:19px}
+.remotePlaybar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:5px 0}
+.remotePlaybar button{font-size:19px;min-height:41px;padding:4px 2px;border-radius:7px;background:linear-gradient(#285baa,#14305d)}
+.remotePlaybar button.playbarPlay{background:linear-gradient(#238c9b,#165a6e)}
+.remoteKeypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:5px 0;padding:6px;border-radius:12px}
+.remoteKeypad button{min-height:39px;font-size:20px;border-radius:7px;padding:2px}
+.remoteKeypad button:nth-last-child(3),.remoteKeypad button:last-child{font-size:15px}
+.remoteActionBank{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.remoteActionBank button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;font-weight:800;font-size:14px;border-radius:7px;min-height:43px;padding:3px}
+.remoteActionBank button small{font-size:8px;font-weight:500}.remoteSecondary{display:flex;gap:5px;margin-top:7px}
+.remoteSecondary button{flex:1;min-height:38px;font-size:11px;padding:5px}
+@keyframes beamSwing{from{transform:rotate(-22deg)}to{transform:rotate(26deg)}}
+@keyframes spinOrbit{to{transform:rotate(360deg)}}
+@keyframes slowPulse{50%{transform:scale(1.18);opacity:.6}}
+@media (prefers-reduced-motion:reduce){.stageFX *, .remoteScenery *, .remoteStage:before{animation:none!important}}
+@media(max-width:420px){.hubEnter{min-height:133px;padding:18px}.hubEnterIcon{font-size:55px}.hubEnter b{font-size:21px}.hubTile{min-height:101px}.stage{min-height:275px}.remote header{padding:6px 10px}.remote .brand{font-size:18px}.remote .brand img{height:29px;width:25px}.remote #connection{font-size:10px}.remote main{padding:6px 9px 92px}.remoteStage{height:25vh;min-height:150px}.remoteKeypad button{min-height:36px}.remoteActionBank button{min-height:40px}}
