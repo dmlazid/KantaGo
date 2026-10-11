@@ -55,3 +55,15 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 .remoteLyricStage:fullscreen{height:100vh;width:100vw;border-radius:0}
 .remote .setting{padding:14px}
 @media(max-width:360px){.remoteTransport small,.remoteActions small{font-size:8px}.remoteTransport button span,.remoteActions button span{font-size:20px}.remoteKeypad button{min-height:48px}.remoteAdjust button{min-height:32px}.remote .filterrow{gap:8px}}
+
+/* 0.3.0 camera pairing and media backup */
+#scanConnect{min-height:56px;font-weight:800;background:linear-gradient(120deg,#3de8d1,#12bba8);color:#05292d}
+#remoteDisconnect{background:#502d3d;border-color:#76465a}
+#exportSongs{border-color:#3b9a91;background:linear-gradient(130deg,#214a52,#193143)}
+#connectDialog p.muted{margin:0 0 10px;font-size:12px}
+
+/* 0.3.0 song source directory */
+.sourceTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0 15px}
+.sourceTiles button{min-width:0;min-height:70px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:6px;padding:13px 12px;background:#152c39;border:1px solid #306068;border-radius:13px}
+.sourceTiles b{font-size:13px;color:#a7f6ee}.sourceTiles small{font-size:11px;color:#b1c9d1;line-height:1.4}
+@media(max-width:350px){.sourceTiles{grid-template-columns:1fr}}

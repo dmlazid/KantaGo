@@ -5,26 +5,123 @@ import com.google.zxing.*;import com.google.zxing.common.BitMatrix;
 public class MainActivity extends Activity implements LocalServer.Api {
  WebView web;LocalServer server;final Handler ui=new Handler(Looper.getMainLooper());final ExecutorService io=Executors.newSingleThreadExecutor();final MidiEngine midi=new MidiEngine();
  JSONArray songs=new JSONArray();final ArrayList<String> queue=new ArrayList<>();JSONObject current;MediaPlayer media;MidiSong score;final List<double[]> lrcTimes=new ArrayList<>();final List<String> lrcText=new ArrayList<>();
- File root,bg;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
+ File root,bg;QrCamera qrCamera;int key=0,lyricOffset=0;double tempo=1,volume=.7;boolean paused=false,remote=false,loading=false;String notice="",base,backgroundType="image";volatile String importStatus="";public static volatile String audioError="";long revision=1;int playGeneration=0;boolean destroyed=false;
  AudioManager audio;AudioFocusRequest focus;String importLanguage="Other",importYear="";
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);root=new File(getFilesDir(),"songs");root.mkdirs();lyricOffset=getPreferences(0).getInt("lyricOffset",0);
   try{File library=new File(getFilesDir(),"library.json");if(library.exists())songs=new JSONArray(read(library));if(songs.length()==0){File f=new File(root,"demo.mid");copy(getAssets().open("demo.mid"),f,1024*1024);songs.put(new JSONObject().put("id","000001").put("title","KantaGo Sound Check").put("artist","KantaGo original demo").put("language","English").put("year",2026).put("file",f.getName()).put("favorite",false));save();}
    String bgName=getPreferences(0).getString("background","");if(!bgName.isEmpty()){File f=new File(getFilesDir(),bgName);if(f.exists()){bg=f;backgroundType=f.getName().endsWith("mp4")?"video":"image";}}
+   try{
+    JSONArray previousQueue=new JSONArray(getPreferences(0).getString("savedQueue","[]"));
+    for(int i=0;i<previousQueue.length()&&queue.size()<500;i++){
+     String number=previousQueue.optString(i);
+     try{find(number);queue.add(number);}catch(Exception ignored){}
+    }
+   }catch(Exception ignored){}
    server=new LocalServer(getAssets(),this);base="http://127.0.0.1:"+server.port;
   }catch(Exception e){new AlertDialog.Builder(this).setMessage("Could not start KantaGo: "+e.getMessage()).setPositiveButton("Close",(d,w)->finish()).show();return;}
   audio=(AudioManager)getSystemService(AUDIO_SERVICE);focus=new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build()).setOnAudioFocusChangeListener(change->{if(change<0)ui.post(()->{if(current!=null&&!paused)toggle();});}).build();
   web=new WebView(this);web.setBackgroundColor(0xff101827);web.getSettings().setJavaScriptEnabled(true);web.getSettings().setDomStorageEnabled(true);web.getSettings().setAllowFileAccess(false);web.getSettings().setAllowContentAccess(false);web.getSettings().setMediaPlaybackRequiresUserGesture(false);web.setWebChromeClient(new WebChromeClient());
   web.setWebViewClient(new WebViewClient(){@Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !r.getUrl().toString().startsWith(base+"/");}});web.addJavascriptInterface(new Bridge(),"Native");setContentView(web);home();
  }
- void home(){remote=false;web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
+ void home(){remote=false;web.removeJavascriptInterface("RemoteShell");web.addJavascriptInterface(new Bridge(),"Native");web.loadUrl(base+"/#token="+server.token+"&host=1");}
+ class RemoteShell{
+  @JavascriptInterface public void disconnect(){ui.post(()->home());}
+ }
  class Bridge {
   @JavascriptInterface public void importFiles(String lang,String year,boolean folder){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent i=new Intent(folder?Intent.ACTION_OPEN_DOCUMENT_TREE:Intent.ACTION_OPEN_DOCUMENT);if(!folder){i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addCategory(Intent.CATEGORY_OPENABLE);}startActivityForResult(i,folder?11:10);});}
   @JavascriptInterface public void importZip(String lang,String year){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.setType("*/*");intent.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(intent,13);});}
   @JavascriptInterface public void background(){ui.post(()->{if(remote)return;Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/jpeg","image/png","video/mp4"});startActivityForResult(i,12);});}
   @JavascriptInterface public void pairing(){ui.post(()->showPairing());}
   @JavascriptInterface public void connect(String address){ui.post(()->connectRemote(address));}
+  @JavascriptInterface public void scanPair(){ui.post(()->openQrScanner());}
+  @JavascriptInterface public String previousRemote(){return getPreferences(0).getString("lastRemoteAddress","");}
+  @JavascriptInterface public void openSongSource(String name){ui.post(()->{
+   if(remote)return;
+   Map<String,String> sites=new HashMap<>();
+   sites.put("den","https://karaokeden.com/eng");
+   sites.put("packs","https://ideas-knowledge-wisdom.blogspot.com/2014/04/6000-midi-karaoke-file-free-download.html?m=1");
+   sites.put("midkar","https://midkar.com/Pop_Rock/Pop_Rock_A_to_Z.html");
+   sites.put("midisong","https://www.midi-song.com/index.php?action_main=Alphabet-Songs&param=I&start=101");
+   sites.put("freemidis","https://freemidis.net/");
+   sites.put("songbook","https://www.scribd.com/document/583899352/Karaoke-Song-Book-PDFDrive");
+   sites.put("service","https://old.song-service.com/");
+   String url=sites.get(name);
+   if(url==null)return;
+   try{Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(url));startActivity(open);}
+   catch(Exception e){toast("No browser is available to open this song website.");}
+  });}
+  @JavascriptInterface public void exportSongs(){ui.post(()->{
+   if(remote)return;
+   Intent pick=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+   pick.addCategory(Intent.CATEGORY_OPENABLE);
+   pick.setType("application/zip");
+   pick.putExtra(Intent.EXTRA_TITLE,"KantaGo-song-backup.zip");
+   startActivityForResult(pick,14);
+  });}
  }
- void connectRemote(String address){try{String a=address.trim();if(!a.startsWith("http://"))a="http://"+a;Uri u=Uri.parse(a);String host=u.getHost();if(host==null||!host.matches("[0-9.]+")||u.getPort()<1)throw new Exception();InetAddress ip=InetAddress.getByName(host);if(!ip.isSiteLocalAddress()&&!ip.isLoopbackAddress())throw new Exception();stop();queue.clear();remote=true;web.removeJavascriptInterface("Native");web.loadUrl(a.endsWith("/")?a:a+"/");}catch(Exception e){toast("Enter the local address shown on the main device, including its port.");}}
+ void openQrScanner(){
+  if(remote)return;
+  if(checkSelfPermission(android.Manifest.permission.CAMERA)!=android.content.pm.PackageManager.PERMISSION_GRANTED){
+   requestPermissions(new String[]{android.Manifest.permission.CAMERA},42);
+   return;
+  }
+  if(qrCamera!=null)qrCamera.close();
+  qrCamera=new QrCamera(this,this::connectRemote);
+  try{qrCamera.show();}catch(Exception e){toast("Camera unavailable. Enter address manually.");}
+ }
+ @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grants){
+  super.onRequestPermissionsResult(requestCode,permissions,grants);
+  if(requestCode==42){
+   if(grants.length>0&&grants[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)openQrScanner();
+   else toast("Camera permission is optional. Enter the address manually instead.");
+  }
+ }
+ void connectRemote(String address){
+  try{
+   String url=PairingUrl.normalize(address);
+   getPreferences(0).edit().putString("lastRemoteAddress",url.split("#",2)[0]).apply();
+   stop();
+   remote=true;
+   web.removeJavascriptInterface("Native");
+   web.addJavascriptInterface(new RemoteShell(),"RemoteShell");
+   web.loadUrl(url);
+  }catch(Exception e){toast(e.getMessage()==null?"Check the pairing address":e.getMessage());}
+ }
+ void saveQueue(){getPreferences(0).edit().putString("savedQueue",new JSONArray(queue).toString()).apply();}
+ void exportSongPack(Uri destination){
+  importStatus="Exporting ZIP backup…";
+  io.execute(()->{
+   try(OutputStream out=getContentResolver().openOutputStream(destination)){
+    if(out==null)throw new IOException("Cannot write ZIP at this location");
+    try(java.util.zip.ZipOutputStream zip=new java.util.zip.ZipOutputStream(out)){
+     LinkedHashSet<String> names=new LinkedHashSet<>();
+     for(int i=0;i<songs.length();i++){
+      String name=songs.getJSONObject(i).optString("file");
+      if(name.isEmpty())continue;
+      names.add(name);
+      String lyric=name.replaceFirst("\\.[^.]+$","")+".lrc";
+      if(new File(root,lyric).isFile())names.add(lyric);
+     }
+     int written=0;byte[] buffer=new byte[32768];
+     File folder=root.getCanonicalFile();
+     for(String name:names){
+      File source=new File(root,name).getCanonicalFile();
+      if(!folder.equals(source.getParentFile())||!source.isFile())continue;
+      zip.putNextEntry(new java.util.zip.ZipEntry(source.getName()));
+      try(InputStream media=new FileInputStream(source)){
+       int n;while((n=media.read(buffer))!=-1)zip.write(buffer,0,n);
+      }
+      zip.closeEntry();
+      importStatus="Backing up "+(++written)+" of "+names.size()+" files…";
+     }
+     zip.putNextEntry(new java.util.zip.ZipEntry("kantago-catalog.json"));
+     zip.write(songs.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+     zip.closeEntry();
+     importStatus="ZIP backup saved: "+written+" media/lyric files. Keep it somewhere safe.";
+    }
+   }catch(Exception e){importStatus="Song backup failed: "+e.getMessage();}
+  });
+ }
  String address(){try{for(Enumeration<NetworkInterface> n=NetworkInterface.getNetworkInterfaces();n.hasMoreElements();)for(Enumeration<InetAddress> a=n.nextElement().getInetAddresses();a.hasMoreElements();){InetAddress ip=a.nextElement();if(ip instanceof Inet4Address&&!ip.isLoopbackAddress()&&ip.isSiteLocalAddress())return "http://"+ip.getHostAddress()+":"+server.port;}}catch(Exception ignored){}return "Connect to Wi-Fi or enable a hotspot";}
  void showPairing(){String addr=address();android.widget.LinearLayout box=new android.widget.LinearLayout(this);box.setOrientation(android.widget.LinearLayout.VERTICAL);box.setPadding(35,25,35,25);android.widget.TextView label=new android.widget.TextView(this);label.setText("On the other phone, join the same Wi-Fi/hotspot. Scan this QR with its camera, or open the address and enter the code.\n\n"+addr+"\nPairing code: "+server.pin+"\n\nKeep KantaGo open on this device. Only pair trusted phones.");label.setTextSize(17);box.addView(label);
   try{BitMatrix bits=new MultiFormatWriter().encode(addr+"/#token="+server.token,BarcodeFormat.QR_CODE,500,500);Bitmap b=Bitmap.createBitmap(500,500,Bitmap.Config.RGB_565);for(int y=0;y<500;y++)for(int x=0;x<500;x++)b.setPixel(x,y,bits.get(x,y)?0xff101827:0xffffffff);android.widget.ImageView image=new android.widget.ImageView(this);image.setImageBitmap(b);box.addView(image,new android.widget.LinearLayout.LayoutParams(-1,500));}catch(Exception ignored){}
@@ -63,19 +160,22 @@ public class MainActivity extends Activity implements LocalServer.Api {
   case "lyricOffset":lyricOffset=Math.max(-10000,Math.min(10000,p.getInt("value")));getPreferences(0).edit().putInt("lyricOffset",lyricOffset).apply();break;
   case "favorite":JSONObject s=find(id);s.put("favorite",!s.optBoolean("favorite"));save();revision++;break;
   case "tag":JSONObject t=find(id);String lang=p.optString("language","Other");if(!Arrays.asList("English","OPM","Bisaya","Other").contains(lang))throw new Exception("Invalid language");int year=p.optInt("year",0);if(year!=0&&(year<1900||year>2100))throw new Exception("Use a year from 1900 to 2100");t.put("language",lang).put("year",year);save();revision++;break;
-  default:throw new Exception("Unknown command");}return state();}
+  default:throw new Exception("Unknown command");}
+  if(Arrays.asList("reserve","reserveFirst","cancelReservation","remove","move","clearQueue","shuffleQueue").contains(a))saveQueue();
+  return state();}
  void play(JSONObject song)throws Exception{stop();current=song;paused=false;loading=true;int generation=++playGeneration;File f=new File(root,song.getString("file"));audio.requestAudioFocus(focus);
   if(f.getName().endsWith(".mid")||f.getName().endsWith(".kar")){io.execute(()->{try{MidiSong parsed=MidiSong.parse(readBytes(f,16*1024*1024));ui.post(()->{if(destroyed||generation!=playGeneration)return;score=parsed;loading=false;applyAudio();midi.play(parsed,()->ui.post(()->{if(generation==playGeneration)next();}));});}catch(Exception e){ui.post(()->{if(generation==playGeneration){stop();notice="Cannot play MIDI: "+e.getMessage();}});}});
   }else {loadLrc(f);media=new MediaPlayer();media.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build());media.setDataSource(f.getAbsolutePath());media.setOnPreparedListener(m->{if(generation!=playGeneration)return;loading=false;applyAudio();m.start();});media.setOnCompletionListener(m->{if(generation==playGeneration)next();});media.setOnErrorListener((m,w,e)->{if(generation==playGeneration){stop();notice="This media file could not be played.";}return true;});media.prepareAsync();}
  }
  void stop(){playGeneration++;midi.stop();if(media!=null){media.release();media=null;}score=null;current=null;loading=false;paused=false;lrcTimes.clear();lrcText.clear();if(audio!=null&&focus!=null)audio.abandonAudioFocusRequest(focus);}
- void next(){stop();if(!queue.isEmpty())try{play(find(queue.remove(0)));}catch(Exception e){notice=e.getMessage();}}
+ void next(){stop();if(!queue.isEmpty())try{String id=queue.remove(0);saveQueue();play(find(id));}catch(Exception e){notice=e.getMessage();}}
  void toggle(){if(current==null){next();return;}if(loading)return;paused=!paused;midi.paused=paused;if(media!=null){if(paused)media.pause();else{audio.requestAudioFocus(focus);media.start();}}}
  void applyAudio(){midi.key=key;midi.tempo=tempo;midi.volume=volume;if(media!=null&&!loading)try{media.setVolume((float)volume,(float)volume);media.setPlaybackParams(new PlaybackParams().setSpeed((float)tempo).setPitch((float)Math.pow(2,key/12.0)));if(paused)media.pause();}catch(Exception e){notice="Pitch/tempo unavailable for this media format.";}}
  void loadLrc(File f){File l=new File(root,f.getName().replaceFirst("\\.[^.]+$","")+".lrc");if(!l.exists())return;try{Pattern pattern=Pattern.compile("\\[(\\d+):(\\d+(?:\\.\\d+)?)\\]");TreeMap<Double,String> lines=new TreeMap<>();for(String line:read(l).split("\n")){Matcher m=pattern.matcher(line);String text=line.replaceAll("\\[[^]]*\\]","").trim();while(m.find())lines.put(Integer.parseInt(m.group(1))*60000+Double.parseDouble(m.group(2))*1000,text);}for(Map.Entry<Double,String> e:lines.entrySet()){lrcTimes.add(new double[]{e.getKey()});lrcText.add(e.getValue());}}catch(Exception e){notice="Could not read the matching LRC lyrics.";}}
  @Override public File background(){return bg;}
  @Override public File mediaFile(){try{return current==null?null:new File(root,current.getString("file"));}catch(Exception e){return null;}}
- @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null)return;final String language=importLanguage,year=importYear;importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
+ @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null)return;
+  if(req==14){Uri file=data.getData();if(file!=null)exportSongPack(file);return;}final String language=importLanguage,year=importYear;importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
  if(req==13){
   Uri uri=data.getData();
   if(uri==null||!displayName(uri).toLowerCase(Locale.ROOT).endsWith(".zip"))throw new IOException("Select a .zip song pack");
@@ -115,5 +215,5 @@ public class MainActivity extends Activity implements LocalServer.Api {
  void save()throws Exception{android.util.AtomicFile f=new android.util.AtomicFile(new File(getFilesDir(),"library.json"));FileOutputStream out=f.startWrite();try{out.write(songs.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));f.finishWrite(out);}catch(Exception e){f.failWrite(out);throw e;}}
  void toast(String s){android.widget.Toast.makeText(this,s,android.widget.Toast.LENGTH_LONG).show();}
  @Override public void onBackPressed(){if(remote){home();return;}web.evaluateJavascript("window.goHome && window.goHome()",null);}
- @Override protected void onDestroy(){destroyed=true;stop();if(server!=null)server.close();io.shutdownNow();if(web!=null)web.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){destroyed=true;if(qrCamera!=null)qrCamera.close();saveQueue();stop();if(server!=null)server.close();io.shutdownNow();if(web!=null)web.destroy();super.onDestroy();}
 }
