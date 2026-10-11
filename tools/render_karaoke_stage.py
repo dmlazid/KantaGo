@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render two original, silent loopable animated karaoke stage videos.
+"""Render four original, silent loopable animated karaoke stage videos.
 All graphics are original procedural artwork. Requires Pillow, NumPy and ffmpeg.
 No copyrighted music or external footage is downloaded.
 """
@@ -42,7 +42,51 @@ def dancer(image,t,colors,center):
   d.rounded_rectangle((gx-14,y-32,gx+12,y-13),radius=8,fill=(80,156,204,115))
   circ(d,gx-7,y-27,4,(194,237,255,120))
  d.arc((x-12,y+17,x+12,y+34),0,180,fill=(19,29,65,255),width=3)
+
+def abstract_spectrum(t):
+ # Original animated palette of shifting chevrons and layered confetti triangles.
+ img=Image.new('RGBA',(W,H),(247,223,188,255))
+ d=ImageDraw.Draw(img,'RGBA')
+ palette=[(247,89,136,245),(241,202,75,248),(75,203,186,245),(252,151,88,240)]
+ for row in range(11):
+  for col in range(15):
+   center=(col*47-row%2*25-45+int(13*math.sin(t*.7+row*.6)))%635-60
+   y=row*34-30+int(10*math.sin(t*.9+col*.4))
+   size=12+(col*7+row*5)%12
+   color=palette[(row*3+col)%len(palette)]
+   d.polygon([(center,y-size),(center-size,y+size),(center+size,y+size)],fill=color)
+   if col%3==0:
+    d.line([(center-17,y-19),(center,y-size)],fill=(255,255,255,135),width=5)
+ for n in range(11):
+  xx=(n*83+20+int(24*math.sin(t+n)))%W
+  yy=(n*61+40+int(21*math.cos(t+n)))%H
+  circ(d,xx,yy,3+(n%4),(255,255,255,145))
+ return img.convert('RGB')
+
+def abstract_tunnel(t):
+ # Independent original concentric dotted ribbons with a zooming perspective.
+ img=Image.new('RGBA',(W,H),(7,11,32,255))
+ d=ImageDraw.Draw(img,'RGBA')
+ center=(W*.51,H*.45)
+ palette=[(42,182,251,248),(252,138,72,240),(215,64,183,238)]
+ for ring in range(15):
+  radius=(ring*25+int(t*29))%400+10
+  for j in range(58):
+   a=2*math.pi*j/58 +t*.08 +ring*.04
+   x=center[0]+math.cos(a)*radius*1.25
+   y=center[1]+math.sin(a)*radius*.75
+   if -10<x<W+10 and -10<y<H+10:
+    size=max(1,min(8,int(radius/68)+1))
+    circ(d,x,y,size,palette[(ring+j//11)%3])
+ for ray in range(12):
+  angle=ray*math.pi/6
+  d.line([(center[0],center[1]),(center[0]+math.cos(angle)*410,center[1]+math.sin(angle)*340)],fill=(57,92,175,50),width=2)
+ return img.convert('RGB')
+
 def frame(scene,index):
+ t=index/FPS
+ if scene=='spectrum':return abstract_spectrum(t)
+ if scene=='tunnel':return abstract_tunnel(t)
  t=index/FPS; yy,xx=np.mgrid[0:H,0:W];v=yy/H
  a=np.zeros((H,W,3),dtype=np.uint8)
  if scene=='disco':
@@ -97,4 +141,4 @@ def generate(path,scene):
 if __name__=='__main__':
  parser=argparse.ArgumentParser();parser.add_argument('--output',default='app/src/main/assets/scenes');args=parser.parse_args()
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
- for scene in ('disco','sunset'):generate(out/f'{scene}.mp4',scene)
+ for scene in ('disco','sunset','spectrum','tunnel'):generate(out/f'{scene}.mp4',scene)
