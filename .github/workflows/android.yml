@@ -71,9 +71,11 @@ jobs:
           CURRENT="$(cert_of app/build/outputs/apk/debug/app-debug.apk)"
           echo "Current APK actual certificate SHA256: $CURRENT"
           echo "Pinned expected SHA256: $EXPECTED"
-          test -n "$CURRENT" && test "$CURRENT" = "$EXPECTED" || {
-            echo "::error::APK signer certificate differs from pinned install certificate"; exit 1;
-          }
+          if [[ -z "$CURRENT" || "$CURRENT" != "$EXPECTED" ]]; then
+            echo "::warning::APK signer differs from pinned debug keystore; checking old releases to determine the original installed signer."
+          fi
+          echo "Android Gradle signing configuration:"
+          gradle :app:signingReport --no-daemon | grep -E 'Variant:|Config:|Store:|Alias:|SHA-256:' || true
           mkdir -p "$RUNNER_TEMP/kantago-history"
           for version in "test-6:KantaGo-0.2.2-test.apk" "test-7:KantaGo-0.2.2-test.apk" "test-8:KantaGo-0.2.3.apk" "test-17:KantaGo-0.4.0.apk" "test-19:KantaGo-0.5.0.apk"; do
             tag="${version%%:*}"
@@ -89,6 +91,10 @@ jobs:
               echo "::warning::Historical release $tag unavailable for signature comparison"
             fi
           done
+          if [[ -z "$CURRENT" || "$CURRENT" != "$EXPECTED" ]]; then
+            echo "::error::APK signing certificate mismatch found; build stopped. Update signing configuration before publishing."
+            exit 1
+          fi
       - name: Show KantaGo certificate identity
         run: |
           keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android             -alias androiddebugkey | grep -E "SHA256:" | head -1
