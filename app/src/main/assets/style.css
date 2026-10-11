@@ -153,3 +153,10 @@ body:not(.remote) .remoteOnly,body:not(.remote) nav [data-page="remoteControl"],
 @keyframes slowPulse{50%{transform:scale(1.18);opacity:.6}}
 @media (prefers-reduced-motion:reduce){.stageFX *, .remoteScenery *, .remoteStage:before{animation:none!important}}
 @media(max-width:420px){.hubEnter{min-height:133px;padding:18px}.hubEnterIcon{font-size:55px}.hubEnter b{font-size:21px}.hubTile{min-height:101px}.stage{min-height:275px}.remote header{padding:6px 10px}.remote .brand{font-size:18px}.remote .brand img{height:29px;width:25px}.remote #connection{font-size:10px}.remote main{padding:6px 9px 92px}.remoteStage{height:25vh;min-height:150px}.remoteKeypad button{min-height:36px}.remoteActionBank button{min-height:40px}}
+
+/* KantaGo 0.5.0 single activated karaoke bundle */
+.activatePanel{margin:17px 0 14px;padding:15px;border:1px solid #328f8e;border-radius:15px;background:linear-gradient(145deg,#102e3a,#1b2840)}
+.activatePanel h3{margin:2px 0 8px;font-size:17px;color:#88f2e4}
+.activatePanel p{margin:5px 0 13px;font-size:12px;line-height:1.5}
+.activatePanel #activationCode{font-family:monospace;letter-spacing:.3px;text-transform:uppercase;margin-bottom:6px}
+.activatePanel .wide{margin:6px 0}

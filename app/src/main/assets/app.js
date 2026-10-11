@@ -32,6 +32,19 @@ function importDialog(){if(host)$('importDialog').showModal();else notify('Impor
 function pick(folder){let year=$('importYear').value;if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}Native.importFiles($('importLang').value,year,folder);$('importDialog').close();}
 $('pickFiles').onclick=()=>pick(false);$('pickFolder').onclick=()=>pick(true);
 $('exportSongs').onclick=()=>{if(host)Native.exportSongs();else notify('Back up songs on the main KantaGo phone.');};
+$('pickActivated').onclick=()=>{
+ if(!host){notify('Import song bundles on the main phone.');return;}
+ const key=$('activationCode').value.trim(),year=$('importYear').value;
+ if(key.length<8){notify('Enter the activation key shown with your downloaded pack.');return;}
+ if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a valid song year.');return;}
+ Native.importActivatedPack(key,$('importLang').value,year);
+ $('activationCode').value='';
+ $('importDialog').close();
+};
+$('getStarterPack').onclick=()=>{
+ if(host&&typeof Native.openStarterPack==='function')Native.openStarterPack();
+ else notify('Open the KantaGo GitHub releases page on your main phone.');
+};
 $('pickZip').onclick=()=>{
  const year=$('importYear').value;
  if(year&&(Number(year)<1900||Number(year)>2100)){notify('Enter a year between 1900 and 2100.');return;}

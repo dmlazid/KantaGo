@@ -33,7 +33,7 @@ def filename(raw):
     if len(last) > 180 or Path(last).suffix.lower() not in FORMATS:
         return None
     import re
-    clean = re.sub(r"[^\\w .()-]", "_", last, flags=re.UNICODE)
+    clean = re.sub(r"[^\w .()-]", "_", last, flags=re.UNICODE)
     return clean[: -len(Path(clean).suffix)] + Path(clean).suffix.lower()
 
 
