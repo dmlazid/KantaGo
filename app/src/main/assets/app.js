@@ -154,7 +154,7 @@ $('seek').onchange=()=>{seeking=false;command('seek',{value:Number($('seek').val
 $('fullscreen').onclick=()=>{if($('stage').requestFullscreen)$('stage').requestFullscreen().catch(()=>notify('Fullscreen is unavailable on this device.'));};
 
 const scene=localStorage.getItem('kantago-scene')||'auto';
-$('stage').dataset.scene=['auto','disco','sunset'].includes(scene)?scene:'auto';
+$('stage').dataset.scene=['auto','disco','sunset','spectrum','tunnel'].includes(scene)?scene:'auto';
 document.querySelectorAll('[data-scene-choice]').forEach(b=>{
  b.classList.toggle('selected',b.dataset.sceneChoice===$('stage').dataset.scene);
  b.onclick=()=>{
@@ -221,7 +221,8 @@ function updateCaptionWindow(container,raw){
 }
 function updateAnimatedKaraoke(s){
  const c=s.current,mode=$('stage').dataset.scene;
- const selected=mode==='auto'?((Number((c?.id||'0').slice(-2))%2)?'sunset':'disco'):mode;
+ const palette=['spectrum','tunnel','disco','sunset'];
+ const selected=mode==='auto'?palette[(Number((c?.id||'0').slice(-2))||0)%palette.length]:mode;
  const url='/scenes/'+selected+'.mp4';
  const scene=host?$('stageSceneVideo'):$('remoteStageVideo');
  const inactive=host?$('remoteStageVideo'):$('stageSceneVideo');

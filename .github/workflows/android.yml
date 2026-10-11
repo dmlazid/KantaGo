@@ -49,7 +49,7 @@ jobs:
         run: |
           python3 -m pip install --disable-pip-version-check "Pillow>=10,<13" "numpy>=1.26,<3" "imageio-ffmpeg>=0.6,<1"
           python3 tools/render_karaoke_stage.py --output app/src/main/assets/scenes
-          for clip in disco sunset; do
+          for clip in disco sunset spectrum tunnel; do
             test "$(wc -c < "app/src/main/assets/scenes/$clip.mp4")" -gt 10000
           done
       - name: Core checks
@@ -107,9 +107,11 @@ jobs:
           ASSETS="$(unzip -Z1 "$FILE")"
           grep -Fqx 'assets/scenes/disco.mp4' <<< "$ASSETS"
           grep -Fqx 'assets/scenes/sunset.mp4' <<< "$ASSETS"
+          grep -Fqx 'assets/scenes/spectrum.mp4' <<< "$ASSETS"
+          grep -Fqx 'assets/scenes/tunnel.mp4' <<< "$ASSETS"
           grep -Fqx 'assets/builtin/catalog.json' <<< "$ASSETS"
           COUNT="$(grep -Ec '^assets/builtin/kb-[0-9]{6}\.kar' <<< "$ASSETS")"
-          echo "Found $COUNT built-in karaoke MIDI tracks and two looping MP4 scenes"
+          echo "Found $COUNT built-in karaoke MIDI tracks and four looping MP4 scenes"
           test "$COUNT" -eq 48
       - name: Show KantaGo certificate identity
         run: |

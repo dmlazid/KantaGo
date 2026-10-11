@@ -26,7 +26,7 @@ public final class LocalServer {
   try{reply(out,200,"application/json",api.call(path,json).getBytes(StandardCharsets.UTF_8));}catch(Exception e){reply(out,400,"application/json",new JSONObject().put("error",e.getMessage()==null?"Command failed":e.getMessage()).toString().getBytes());}return;
  }
  if(!method.equals("GET")){reply(out,405,"text/plain",new byte[0]);return;}
- String file=path.equals("/")?"index.html":path.substring(1);if(!Arrays.asList("index.html","app.js","style.css","logo.svg","background.svg","scenes/disco.mp4","scenes/sunset.mp4").contains(file)){reply(out,404,"text/plain",new byte[0]);return;}
+ String file=path.equals("/")?"index.html":path.substring(1);if(!Arrays.asList("index.html","app.js","style.css","logo.svg","background.svg","scenes/disco.mp4","scenes/sunset.mp4","scenes/spectrum.mp4","scenes/tunnel.mp4").contains(file)){reply(out,404,"text/plain",new byte[0]);return;}
  try(InputStream asset=assets.open(file)){ByteArrayOutputStream b=new ByteArrayOutputStream();byte[] buf=new byte[8192];int got;while((got=asset.read(buf))!=-1)b.write(buf,0,got);String type=file.endsWith("mp4")?"video/mp4":file.endsWith("js")?"text/javascript":file.endsWith("css")?"text/css":file.endsWith("svg")?"image/svg+xml":file.endsWith("jpg")?"image/jpeg":"text/html";reply(out,200,type,b.toByteArray());}
  }catch(Exception ignored){} }
  private void reply(OutputStream o,int status,String type,byte[] b)throws IOException{String head="HTTP/1.1 "+status+" Response\r\nContent-Type: "+type+"; charset=utf-8\r\nContent-Length: "+b.length+"\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n\r\n";o.write(head.getBytes(StandardCharsets.US_ASCII));o.write(b);}

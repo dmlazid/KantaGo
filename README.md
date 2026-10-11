@@ -24,7 +24,7 @@ The pinned debug key currently survives through GitHub Actions caching, which is
 ## Four-line karaoke stage and compact videoke control panel (v0.8.0)
 The main player now follows the common SongHub videoke layout more closely:
 - Four timed lyric lines at once, with **white upcoming text, strong black outlines, and blue highlighting** for the sung words
-- Full-width moving stage video above a compact KEY/TEM/MEL panel, playback transport, song-number entry, and 4×4 reservation keypad
+- Four built-in original silent video scenes (neon dancer, sunset dancer, colorful shapes, and light tunnel), selected automatically per song or in Settings. Full-width moving stage video above a compact KEY/TEM/MEL panel, playback transport, song-number entry, and 4×4 reservation keypad
 - Reserve, cancel, play first, reserve-list, and change-background actions remain functional
 - Uses original KantaGo video/track assets; it does not copy the SongHub logo, proprietary graphics, or commercial backing tracks
 - The paired-phone remote receives the same four-line caption data. KAR/MIDI lyric events have word-level timing, while simple line-timestamped LRC files use approximate word progress
