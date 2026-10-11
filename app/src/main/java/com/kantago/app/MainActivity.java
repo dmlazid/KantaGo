@@ -29,6 +29,11 @@ public class MainActivity extends Activity implements LocalServer.Api {
  }
  class Bridge {
   @JavascriptInterface public void importFiles(String lang,String year,boolean folder){ui.post(()->{if(remote)return;importLanguage=Arrays.asList("English","OPM","Bisaya","Other").contains(lang)?lang:"Other";importYear=year;Intent i=new Intent(folder?Intent.ACTION_OPEN_DOCUMENT_TREE:Intent.ACTION_OPEN_DOCUMENT);if(!folder){i.setType("*/*");i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);i.addCategory(Intent.CATEGORY_OPENABLE);}startActivityForResult(i,folder?11:10);});}
+  @JavascriptInterface public void openStarterPack(){ui.post(()->{
+   if(remote)return;
+   try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/dmlazid/KantaGo/releases")));}
+   catch(Exception e){toast("No browser available for GitHub downloads.");}
+  });}
   @JavascriptInterface public void importActivatedPack(String key,String lang,String year){
    if(key==null||key.trim().length()<8||key.trim().length()>256){ui.post(()->toast("Enter your song pack activation key"));return;}
    ui.post(()->{
@@ -171,7 +176,7 @@ public class MainActivity extends Activity implements LocalServer.Api {
  void loadLrc(File f){File l=new File(root,f.getName().replaceFirst("\\.[^.]+$","")+".lrc");if(!l.exists())return;try{Pattern pattern=Pattern.compile("\\[(\\d+):(\\d+(?:\\.\\d+)?)\\]");TreeMap<Double,String> lines=new TreeMap<>();for(String line:read(l).split("\n")){Matcher m=pattern.matcher(line);String text=line.replaceAll("\\[[^]]*\\]","").trim();while(m.find())lines.put(Integer.parseInt(m.group(1))*60000+Double.parseDouble(m.group(2))*1000,text);}for(Map.Entry<Double,String> e:lines.entrySet()){lrcTimes.add(new double[]{e.getKey()});lrcText.add(e.getValue());}}catch(Exception e){notice="Could not read the matching LRC lyrics.";}}
  @Override public File background(){return bg;}
  @Override public File mediaFile(){try{return current==null?null:new File(root,current.getString("file"));}catch(Exception e){return null;}}
- @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null)return;
+ @Override protected void onActivityResult(int req,int res,Intent data){super.onActivityResult(req,res,data);if(res!=RESULT_OK||data==null){if(req==15)packActivationKey="";return;}
   if(req==14){Uri file=data.getData();if(file!=null)exportSongPack(file);return;}
   final String language=importLanguage,year=importYear;
   final String activation=packActivationKey;packActivationKey="";importStatus="Importing…";io.execute(()->{try{if(req==12){Uri u=data.getData();String name=displayName(u).toLowerCase(Locale.ROOT);String ext=name.endsWith(".mp4")?"mp4":name.endsWith(".png")?"png":"jpg";File dest=new File(getFilesDir(),"custom-background."+ext);copy(getContentResolver().openInputStream(u),dest,500L*1024*1024);ui.post(()->{bg=dest;backgroundType=ext.equals("mp4")?"video":"image";getPreferences(0).edit().putString("background",dest.getName()).putLong("bgRevision",System.currentTimeMillis()).apply();importStatus="Background ready";});return;}
